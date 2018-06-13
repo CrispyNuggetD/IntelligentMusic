@@ -1,0 +1,3833 @@
+\documentclass[a4paper]{article}
+\usepackage{graphicx}
+\usepackage{html}
+
+%
+% This document is Copyright 2003 Bob MacCallum.
+%
+
+% use 'make' to make PS, PDF, and HTML versions
+% you need the programs 'dia' and 'xfig' (and transfig)
+
+\begin{document}
+
+\title{PerlGP - The Manual}
+
+\author{Bob MacCallum\\
+Stockholm Bioinformatics Center\\
+Stockholm University\\
+106 91 Stockholm\\
+Sweden}
+
+\maketitle
+
+\tableofcontents
+
+\section{Installation}
+
+\subsection{Versions and Disclaimer}
+
+This is version 1.001 of the PerlGP manual, which refers to version
+1.0.0 of PerlGP, released on 03 Feb 2003.  While every effort has been
+made to keep the manual up to date and accurate, it is not guaranteed
+to be free of errors and omissions.  The author is not responsible for
+any losses or inconvenience caused by such errors.  All reports of
+errors and suggestions for improvement or clarification are welcome.
+This manual is copyright Bob MacCallum 2003.
+
+\subsection{Prerequisites}\label{foo}
+
+You are strongly advised to install the plotting program gnuplot on
+your system (\texttt{http://www.gnuplot.info}).  That's all you need I
+think, apart from Perl of course.  Perl 5.6.1 or higher is
+recommended, but 5.6.0 works too (you may experience memory leaks).
+
+PerlGP is currently only tested under Linux, but it should work on all
+Unix-like systems (it used to run on IRIX a few years ago, and in
+MacPerl even longer ago).
+
+\subsection{Unpacking}
+
+After obtaining the file perlgp-X.Y.Z.tar.gz (where X, Y and Z are
+version numbers), unpack it with one of the following command
+sequences on most Unix-like systems:
+
+\begin{verbatim}
+  linux> tar xzf perlgp-X.Y.Z.tar.gz
+or
+  unix1> gtar xzf perlgp-X.Y.Z.tar.gz
+or
+  unix2> gunzip perlgp-X.Y.Z.tar.gz
+  unix2> tar xf perlgp-X.Y.Z.tar
+\end{verbatim}
+
+Then cd into the newly created directory named perlgp-X.Y.Z
+and follow the instructions in the README file for starting
+to work with the PerlGP system.  Before you download, you
+may take a look at this README file in the following section.
+
+\subsection{Environment Variables}
+
+Here follows a copy of the README file to give you an idea of the
+preparation needed to get PerlGP ready for use.  I hope you agree that
+it is not much work.  \textit{For the latest instructions, always
+refer to the README file in the latest distribution.}
+
+\begin{verbatim}
+-----------------
+The PerlGP system  -  author/copyright: Bob MacCallum 2002
+-----------------
+
+To run the demos, first set the following environment variables
+(preferably in your shell startup file)
+
+###########################################
+# PerlGP environment variables (bash style)
+
+# where you unpacked the PerlGP package
+PERLGP_BASE=~/perlgp-X.Y.Z
+
+# probably don't need to change these two
+PERLGP_LIB=$PERLGP_BASE/lib
+PERLGP_BIN=$PERLGP_BASE/bin
+
+# add PERLGP_BIN to your PATH
+PATH=$PERLGP_BIN:$PATH
+
+# a LOCAL temporary directory (you'll need to clean up manually afterwards)
+PERLGP_SCRATCH=/scratch
+
+# a network directory for storing 'checkpoint/restart' populations and
+# migrants between machines.  leave empty if you're not doing this
+PERLGP_POPS=
+
+# if you use a queueing system, give the name of the environment
+# variable which contains the job id
+PERLGP_JOBID=
+
+# you may need to 'export' these variables
+##########################################
+
+
+Then you simply go into a demo directory and type:
+
+perlgp-run.pl
+
+(preferably backgrounding it)
+
+For more, see the README files in the demo directories.
+\end{verbatim}
+
+\section{Overview}
+\subsection{Aims of the Project}
+One early aim in this project was to create a GP system using some of
+Perl's most convenient and well developed features (namely hash tables
+and regular expressions) rather than make a Perl clone of existing
+implementations.  The initial goal was to evolve string manipulation
+code for protein secondary structure prediction, but through time the
+emphasis has shifted more towards making a robust GP system for
+general use.
+
+This GP implementation has always tried to follow the evolution of
+biological organisms.  It does not start from a baseline, such as
+Koza's work, but uses many borrowed and a few original ideas.  The
+first release of this software contains code for running tournament
+based genetic algorithm on a population of tree-encoded programs.
+However, the object-oriented design allows exchange of components, for
+example a generational GA or Monte Carlo approach for the search
+algorithm, and other representations of individuals.  Object method
+overloading lets you easily customise the algorithms to suit your
+needs.
+
+\subsection{Naming and Font Conventions}
+
+I have tried to be consistent with naming, particularly during the
+recent reorganisation in preparation for going open source.
+However, at this stage the project was around 4 years old and there
+are some exceptions to the rules.
+
+The following table should explain all the font usage in this manual:
+
+\renewcommand{\arraystretch}{2.0}
+\begin{tabular}{l l l l}
+\textbf{Thing} & \textbf{Example} & \textbf{Description} & \textbf{Exceptions} \\
+\hline
+
+\parbox[t]{0.2\textwidth}{\raggedright Perl program or package}
+  & perlgp-run.pl & \parbox[t]{0.25\textwidth}{\raggedright normal font, with trailing .pl or .pm} & \\
+
+\parbox[t]{0.2\textwidth}{\raggedright File or directory name}
+  & `results/best.pl' & \parbox[t]{0.25\textwidth}{\raggedright normal font, in single quotes} & see text\\
+
+\parbox[t]{0.2\textwidth}{\raggedright Environment variable}
+  & PERLGP\_LIB & normal capitals, no \$ & \\
+
+\parbox[t]{0.2\textwidth}{\raggedright Public object method}
+  & \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}
+    & \parbox[t]{0.25\textwidth}{\raggedright typewriter font, trailing (), no underscores, capitalised words, except first word, which is usually a verb}
+      & \parbox[t]{0.25\textwidth}{\raggedright \hyperref[no]{\texttt{Fitness()}}{\texttt{Fitness()}}{xref:Fitness}, \hyperref[no]{\texttt{Age()}}{\texttt{Age()}}{xref:Age}, mutation operators}\\
+
+\parbox[t]{0.2\textwidth}{\raggedright Private object method}
+  & \hyperref[no]{\texttt{\_init\_tree()}}{\texttt{\_init\_tree()}}{xref:_init_tree}
+    & \parbox[t]{0.25\textwidth}{\raggedright typewriter font, leading underscore, usually all lowercase with underscores between words} & \\
+
+\parbox[t]{0.2\textwidth}{\raggedright Mutation operator}
+  & \hyperref[no]{\texttt{copy\_subtree()}}{\texttt{copy\_subtree()}}{xref:copy_subtree}
+    & \parbox[t]{0.25\textwidth}{\raggedright typewriter font, lowercase with underscores, trailing ()} & \\
+
+\parbox[t]{0.2\textwidth}{\raggedright Other Perl functions}
+  & \texttt{eval()}
+    & \parbox[t]{0.25\textwidth}{\raggedright typewriter font, trailing ()} & \\
+
+\parbox[t]{0.2\textwidth}{\raggedright Object attribute}
+  & \hyperref[no]{\texttt{AlarmTime}}{\texttt{AlarmTime}}{xref:AlarmTime}
+    & \parbox[t]{0.25\textwidth}{\raggedright typewriter font, no underscores, capitalised words}
+      & \parbox[t]{0.25\textwidth}{\raggedright don't forget the get and set forms: \texttt{\$self->KeepBest()} and \texttt{\$self->KeepBest(5)}} \\
+
+\parbox[t]{0.2\textwidth}{\raggedright Variables}
+  & \textit{fitness} & italics & \\
+
+\parbox[t]{0.2\textwidth}{\raggedright Data types}
+  & \textsc{number} & small capitals & \\
+\hline
+\end{tabular}
+\\*[2em]
+
+Finally, some subroutines and methods take a hash table as their
+argument.  This is a way of having ``named'' arguments, which don't
+have to be given in any particular order (and can be left out if not
+required).  In the manual, this is presented as:
+
+\begin{flushleft}
+\textit{Arguments:} \texttt{ArgName1} \verb:=>: \textsc{type1}, \texttt{ArgName2} \verb:=>: \textsc{type2}\\
+\end{flushleft}
+
+Be extremely careful typing these argument names, because if you spell
+them wrong, it will probably silently ignore it.
+
+The type called \textsc{attribute-hash} is just a hash where the keys
+are valid Attribute names, and the values are the values you want
+them to have.
+
+Non absolute file names are always relative to the current
+``experiment directory'', which is the directory which contains the
+Algorithm.pm, Individual.pm and so on.
+
+\subsection{Class/Object Hierarchy}
+
+\includegraphics[width=\textwidth]{figures/object-design}
+
+The classes above the dotted line are the ``user servicable parts'', you
+don't need to edit the classes below this, but you might need to look
+at them from time to time (they live in PERLGP\_LIB).
+
+\subsection{How It All Works}\label{dataflow}
+
+Here I will take you through the perlgp-run.pl script and the sine
+curve fitting example, also discussed in Section~\ref{sindemo}.  Some
+code is excluded for clarity.  This script is always run from the
+``experiment directory'', the one containing your locally modified
+Algorithm, Individual and Population classes (see
+Section~\ref{uimplement}).
+
+\subsubsection{Step-by-step: perlgp-run.pl}
+
+\begin{verbatim}
+#!/usr/bin/perl -w
+
+use lib '.', $ENV{PERLGP_LIB} ||  die "
+  PERLGP_LIB undefined
+  please see README file concerning shell environment variables\n\n";
+use Population;
+use Individual;
+use Algorithm;
+use Cwd;
+
+my ($exptid) = cwd() =~ m:([^/]+)$:;
+\end{verbatim} %$
+
+Here we make sure that the current directory and PERLGP\_LIB are in
+the Perl include path.  Then the three main classes are loaded and the
+experiment id is extracted from the trailing part of the current
+directory.  In this case \texttt{\$exptid} would be `sin'.
+
+\begin{verbatim}
+my $population = new Population( ExperimentId => $exptid );
+$population->repopulate();
+\end{verbatim} %$
+
+Then we make a new Population object with this experiment id, and ask
+it to repopulate itself from disk (only does something if this is a
+restarted run).
+
+\begin{verbatim}
+while ($population->countIndividuals() < $population->PopulationSize()) {
+  $population->addIndividual(new Individual( Population => $population,
+                                             ExperimentId => $exptid,
+                       DBFileStem => $population->findNewDBFileStem()));
+}
+\end{verbatim}
+
+This bit fills up the Population with brand new Individuals, until it
+is full.  Note that they are told the identity of their parent
+Population, but this isn't used by the Individuals in the standard
+PerlGP system.
+
+\begin{verbatim}
+my $algorithm = new Algorithm( Population => $population );
+\end{verbatim}
+
+Now we create an Algorithm object which does need to know about a
+Population, because this is the Population that the (genetic)
+Algorithm will manipulate.
+
+\begin{verbatim}
+$algorithm->run();
+\end{verbatim} %$
+
+Then we ask the algorithm object to run itself, and this is the last
+thing that perlgp-run.pl does.  So you can see that perlgp-run.pl is
+just a wrapper which constructs some objects and tells them to get on
+with it...
+
+\subsubsection{Step-by-step: Data input}
+
+Now into TournamentGP.pm we go...  The \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run} method
+is basically a \texttt{for} loop around calls to the
+\hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament} method.  But first, the data is loaded
+if needed with
+
+\begin{verbatim}
+  $self->loadData() unless ($self->TrainingData());
+\end{verbatim}
+
+In other words, if the \texttt{TrainingData} attribute is undefined,
+then \hyperref[no]{\texttt{loadData()}}{\texttt{loadData()}}{xref:loadData} is called (which as you will see, will set
+both \texttt{TrainingData} and \texttt{TestingData}).
+
+\hyperref[no]{\texttt{loadData()}}{\texttt{loadData()}}{xref:loadData} is just a wrapper to call the user-defined
+\hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet} method on training and testing data.  In the sine
+curve example, the data is read from files \hyperref[no]{\texttt{TrainingSet}}{\texttt{TrainingSet}}{xref:TrainingSet} and
+\hyperref[no]{\texttt{TestingSet}}{\texttt{TestingSet}}{xref:TestingSet} (there is no real need for this, the data could be
+generated on-the-fly, but it is more transparent).
+
+If you look at \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet} in Algorithm.pm in the sin demo
+directory, you'll see that an array is filled as the input file is
+read.  Each element represents one training point and an `x' and
+``known'' `y' value are stored in an anonymous hash (wasteful but
+transparent).  \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet} returns a reference to this array,
+and this scalar reference will be stored in the attribute
+\texttt{TrainingData} or \texttt{TestingData}.  We have now loaded up
+the data structures for training and testing data into the Algorithm
+object.
+
+\begin{verbatim}
+sub loadSet {
+  my ($self, $file) = @_;
+  my @set;
+  open(FILE, $file) || die "can't read data set $file\n";
+  while (<FILE>) {
+    my ($x, $y) = split;
+    push @set, { 'x'=>$x, 'y'=>$y };
+  }
+  close(FILE);
+  return \@set;
+}
+\end{verbatim}
+
+
+\subsubsection{Step-by-step: Tournaments I, Fitness Evaluation}
+
+So remember that \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run} calls \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament} many
+times.  The most important steps in \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament} are outlined
+below.
+
+First  a group of Individuals is selected from the Population at random:
+\begin{verbatim}
+  my @cohort = $self->Population()->selectCohort($self->TournamentSize());
+\end{verbatim}
+
+Then for each Individual in the cohort, the fitness on the training
+examples is calculated (simplified):
+
+\begin{verbatim}
+    my $fitness = $ind->Fitness();
+    if (not defined $fitness) { # fitness is not cached
+      $ind->reInitialise();     # evaluate evolved subroutines
+      $fitness = $self->calcFitnessFor($ind, $self->TrainingData());
+      $ind->Fitness($fitness);  # set new fitness
+    }
+\end{verbatim}
+
+The method \hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise} calls \hyperref[no]{\texttt{evalEvolvedSubs()}}{\texttt{evalEvolvedSubs()}}{xref:evalEvolvedSubs}
+which expands the code tree into Perl code and evaluates it, which
+redefines object methods for the Individual including, importantly,
+\hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput}.
+
+The method \hyperref[no]{\texttt{calcFitnessFor()}}{\texttt{calcFitnessFor()}}{xref:calcFitnessFor} is a wrapper which calls
+\hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} on the Individual object and then
+calls the Algorithm method \hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction} on the
+output.
+
+Let's take a closer look at \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput}.  You can get a
+copy by either looking at Grammar.pm or running perlgp-rand-prog.pl,
+which will generate a random version from the grammar.
+
+\begin{verbatim}
+sub evaluateOutput {
+  my ($self, $data) = @_;
+  my ($x, $y, $z, @output);
+  foreach $input (@$data) {
+    $x = $input->{x};
+    # begin evolved bit
+
+    $y = (2 + ($x - pdiv(5,2)));
+
+    # end evolved bit
+    push @output, { 'y'=> $y };
+  }
+  return \@output;
+}
+\end{verbatim} %$
+
+Note that this has some similarities to \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}; mainly in
+the way it fills an array with anonymous hashes and returns a
+reference to it.  This argument passed to this method is the data
+structure that \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet} returned.  The data structure
+returned by \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} is then passed to the fitness
+function.
+
+In most cases, \hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction} also requires the ``correct
+answer'' too.  You will see that in this example, \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}
+loads the ``known'' $y$ value into the input data structure.  It is
+critical that the $y$ value is not accessed by the evolving code,
+otherwise the trivial result \verb:$y = $y: would occur, and we would
+be wasting our time.  So long as $y$ is not mentioned in the grammar,
+this will not occur.  The main point here is that the input data
+structure is not purely input in nature, it will often also contain
+the known or observed output too.  The use of the word ``input'' here
+is not perfect, and I apologise.
+
+The only requirement that PerlGP makes on the data structures passed
+between these methods is that it must be a scalar variable.  You will
+usually use a reference to an array or a hash, but look in the pi demo
+(Section~\ref{pidemo}) where you will see that the scalar is a number.
+
+\subsubsection{Step-by-step: Tournaments II, Selection and Reproduction}
+
+Now that we have a fitness value for every Individual in the
+tournament, the rest is standard.  The tournament members are sorted
+on fitness and the best ones get a chance to reproduce (by calling the
+Individual method \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}) and replace the worst ones.
+The offspring are mutated.
+
+
+\subsection{What You Have to Implement}\label{uimplement}
+
+
+\begin{description}
+\item[Data I/O] Algorithm.pm: \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}, \hyperref[no]{\texttt{saveOutput()}}{\texttt{saveOutput()}}{xref:saveOutput}
+\item[Fitness] Algorithm.pm: \hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction}
+\item[Grammar] Grammar.pm: Functions and Terminals to produce Perl code which defines
+\texttt{Individual::evaluateOutput()} or other object methods or subroutines.  All explained in Section~\ref{Grammar}.
+\item[Functions] Individual.pm: Perhaps you need to define some
+special functions, like protected division.  If your grammar didn't
+produce a definition for \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} then you need to define it here.
+\end{description}
+
+
+\section{Class: Algorithm}\label{Algorithm}
+
+The following sections refer to the \texttt{TournamentGP}
+implementation of the Algorithm object, unless otherwise stated.
+
+\subsection{Methods}
+
+Methods marked with * \emph{must} be implemented in Algorithm.pm for
+each new application/experiment.  These are the routines for
+reading/writing data, fitness function etc.
+
+\subsubsection{\texttt{new()}}\label{Algorithm::new}
+\textit{Arguments:} \hyperref[no]{\texttt{Population}}{\texttt{Population}}{xref:Population} \verb:=>: \textsc{object}, \textsc{attribute-hash} (optional) \\
+\textit{Return value:} \textsc{object}\\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly called by:} perlgp-run.pl\\
+\textit{Usually calls:} \texttt{\_init()}\\
+\textit{Relevant attributes:} all\\
+
+This is the constructor, but you probably don't need to call it
+directly, except in specialist applications.  A Population object must
+be given in the argument hash.  Other attributes may also be
+specified in the argument hash, but note that the ``usual'' way to
+set these attributes is to edit Algorithm.pm in the experiment
+directory.
+
+\subsubsection{\texttt{\_init()}}\label{Algorithm::_init}
+\begin{flushleft}
+\textit{Arguments:} \textsc{attribute-hash}\\
+\textit{Return value:} void\\
+\textit{Defined in:} Algorithm.pm, TournamentGP.pm, SupervisedLearning.pm\\
+\textit{Mainly called by:} constructor\\
+\textit{Usually calls:} \texttt{\_init()} cascade (see below)\\
+\textit{Relevant attributes:} all, \textit{and in particular:} \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness}, \hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}, \hyperref[no]{\texttt{FitnessDirection}}{\texttt{FitnessDirection}}{xref:FitnessDirection}, \hyperref[no]{\texttt{TournamentLogFile}}{\texttt{TournamentLogFile}}{xref:TournamentLogFile}, \hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament}
+\end{flushleft}
+
+
+\sloppy This method sets the attributes.  You should customise the
+object attributes by editing the \texttt{\_init()} method in
+Algorithm.pm.  Default settings can be found in TournamentGP.pm and
+SupervisedLearning.pm.  The \texttt{\_init()} methods are called in a
+cascade in the following order \texttt{Algorithm::\_init()},
+\texttt{TournamentGP::\_init()},
+\texttt{SupervisedLearning::\_init()}.  Attributes set at the
+beginning of the cascade override those defined at the end.
+
+\texttt{TournamentGP::\_init()} performs some other initialisation.
+If \hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness} has not already been defined in
+Algorithm.pm, it is set to zero or an arbitrarily large number (1e99)
+according to the \hyperref[no]{\texttt{FitnessDirection}}{\texttt{FitnessDirection}}{xref:FitnessDirection}.  The attribute/variable
+\hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness} is used to store the fitness of the fittest
+Individual during the run, and is initialised to
+\hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}.  If the file `results/tournament.log'
+file exists (for example after a restart), \hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament} (the
+current tournament number) and \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness} are updated from
+the values in last line in this file.  If the `results' directory does
+not exist it is created, likewise the directory \hyperref[no]{\texttt{KeepBestDir}}{\texttt{KeepBestDir}}{xref:KeepBestDir}
+if required.
+
+\subsubsection{\texttt{loadSet()}*}\label{xref:loadSet}
+\textit{Arguments:} \textsc{string} \textit{filename}\\
+\textit{Return value:} \textsc{scalar} (usually a reference to training/testing data structure)\\
+\textit{Defined in:} Algorithm.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{loadData()}}{\texttt{loadData()}}{xref:loadData}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \\
+
+You must redefine this method to load up training \emph{or} testing
+data into a suitable data structure, and return a scalar variable
+(which is usually going to be a reference to a more complex data
+structure). If your data is in files then you can use
+\textit{filename}; see Section~\ref{xref:loadData} for more details, and
+see the sine curve fitting demo in Section~\ref{sindemo} for an
+example.  You don't have to read from a file of course; see the pi
+demo in Section~\ref{pidemo} for an example.
+
+
+\subsubsection{\texttt{loadData()}}\label{xref:loadData}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} SupervisedLearning.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}, \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{TrainingSet}}{\texttt{TrainingSet}}{xref:TrainingSet}, \hyperref[no]{\texttt{TestingSet}}{\texttt{TestingSet}}{xref:TestingSet}, \texttt{TrainingData}, \texttt{TestingData}
+\end{flushleft}
+
+
+A simple wrapper to call \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet} twice, once each on the
+training and testing data.  The filenames passed to \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}
+are the attributes \hyperref[no]{\texttt{TrainingSet}}{\texttt{TrainingSet}}{xref:TrainingSet} and \hyperref[no]{\texttt{TestingSet}}{\texttt{TestingSet}}{xref:TestingSet}.  The
+two return values (usually references to data structures) are stored
+in the attributes \texttt{TrainingData} and \texttt{TestingData}.
+
+
+\subsubsection{\texttt{fitnessFunction()}*}\label{xref:fitnessFunction}
+\begin{flushleft}
+\textit{Arguments:} \texttt{Input} \verb:=>: \textsc{scalar}, \texttt{Output} \verb:=>: \textsc{scalar}, \texttt{TimeTaken} \verb:=>: \textsc{number}, \texttt{CodeSize} \verb:=>: \textsc{number}\\
+\textit{Return value:} \textsc{number}\\
+\textit{Defined in:} Algorithm.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{calcFitnessFor()}}{\texttt{calcFitnessFor()}}{xref:calcFitnessFor} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{FitnessDirection}}{\texttt{FitnessDirection}}{xref:FitnessDirection}
+\end{flushleft}
+
+
+Calculates the fitness given the Input data (which should also contain
+the desired/true output value), and the Output data (which is
+generated by \texttt{Individual::evaluateOutput()}).  The Input and
+Output scalars will usually be references to data structures
+containing multiple data points, which you will have to loop through
+(see Section~\ref{sindemo} for an example).  You may ignore CodeSize
+and TimeTaken.  The fitness value may go ``up'' or ``down'' as you
+wish, but you must set the attribute \hyperref[no]{\texttt{FitnessDirection}}{\texttt{FitnessDirection}}{xref:FitnessDirection}
+accordingly.
+
+
+\subsubsection{\texttt{saveOutput()}*}\label{xref:saveOutput}
+\begin{flushleft}
+\textit{Arguments:} \texttt{Filename} \verb:=>: \textsc{filename}, \texttt{Input} \verb:=>: \textsc{scalar}, \texttt{Output} \verb:=>: \textsc{scalar}, \texttt{Individual} \verb:=>: \textsc{object} (optional)\\
+\textit{Return value:} void\\
+\textit{Defined in:} Algorithm.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+
+This method saves the output (usually from the best-of-tournament
+Individual) in \textsc{filename} for further offline analysis, for
+example plotting a regression curve.  Both Input and Output data are
+required as in Section~\ref{xref:fitnessFunction}, so that input variables,
+output variables and the desired/true outputs can be saved.  If the
+Individual object is passed to this function, you can print out some
+information about that too.  See the sine curve demo in
+Section~\ref{sindemo} for an example of how to implement this method.
+
+This method should perhaps have been put in the Individual class, but
+it was put in the Algorithm class alongside \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet} which
+also deals with data formatting.
+
+\subsubsection{\texttt{refresh()}}\label{xref:refresh}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{RefreshInterval}}{\texttt{RefreshInterval}}{xref:RefreshInterval}, \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness}\\
+
+Redefine this method in Algorithm.pm if you want to re-read or modify
+the training/testing data at certain intervals (see attribute
+\hyperref[no]{\texttt{RefreshInterval}}{\texttt{RefreshInterval}}{xref:RefreshInterval}).  The sine demo in Section~\ref{sindemo}
+uses this technique.  The default \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} does nothing.  It
+is usually a good idea to reset \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness} if the training
+data changes.
+
+\subsubsection{\texttt{run()}}\label{xref:run}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} perlgp-run.pl\\
+\textit{Usually calls:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}, \hyperref[no]{\texttt{loadData()}}{\texttt{loadData()}}{xref:loadData}, \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh}, \hyperref[no]{\texttt{stopCondition()}}{\texttt{stopCondition()}}{xref:stopCondition}, \texttt{Population::\{backup(),immigrate(),emigrate()\}}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{Tournaments}}{\texttt{Tournaments}}{xref:Tournaments}, \hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament}, \hyperref[no]{\texttt{RefreshInterval}}{\texttt{RefreshInterval}}{xref:RefreshInterval}, \hyperref[no]{\texttt{ComplexityInterval}}{\texttt{ComplexityInterval}}{xref:ComplexityInterval}, \hyperref[no]{\texttt{ComplexityLogFile}}{\texttt{ComplexityLogFile}}{xref:ComplexityLogFile}, \hyperref[no]{\texttt{PopulationBackupInterval}}{\texttt{PopulationBackupInterval}}{xref:PopulationBackupInterval}, \hyperref[no]{\texttt{EmigrateInterval}}{\texttt{EmigrateInterval}}{xref:EmigrateInterval}, \hyperref[no]{\texttt{ImmigrateInterval}}{\texttt{ImmigrateInterval}}{xref:ImmigrateInterval}
+\end{flushleft}
+
+This method will try to call the \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament} method
+\hyperref[no]{\texttt{Tournaments}}{\texttt{Tournaments}}{xref:Tournaments} times, regardless of the starting tournament
+number (in the case of a restart).  If \hyperref[no]{\texttt{RefreshInterval}}{\texttt{RefreshInterval}}{xref:RefreshInterval} is
+non-zero, \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} is called before any tournaments are
+performed.  Then \hyperref[no]{\texttt{loadData}}{\texttt{loadData}}{xref:loadData} is called if \texttt{TrainingData}
+has not already been loaded.
+
+Before each call to \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}, \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} is
+called if the tournament number (\hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament}) modulus
+\hyperref[no]{\texttt{RefreshInterval}}{\texttt{RefreshInterval}}{xref:RefreshInterval} equals zero.  Afterward each tournament, if
+\hyperref[no]{\texttt{stopCondition()}}{\texttt{stopCondition()}}{xref:stopCondition} returns true, the main loop is terminated,
+and no more tournaments will be performed.
+
+The \hyperref[no]{\texttt{ComplexityLogFile}}{\texttt{ComplexityLogFile}}{xref:ComplexityLogFile} is updated every
+\hyperref[no]{\texttt{ComplexityInterval}}{\texttt{ComplexityInterval}}{xref:ComplexityInterval} tournaments with size in characters of the
+Perl code of a random 10\% of the population after compression with
+gzip.  This gives an estimate of the complexity of the population of
+evolved programs.  The 10\% sample is made using perlgp-sample-pop.pl.
+
+At intervals of \hyperref[no]{\texttt{PopulationBackupInterval}}{\texttt{PopulationBackupInterval}}{xref:PopulationBackupInterval}, the
+Population object belonging to this Algorithm object is told
+to perform a backup.  Immigration and emigration are handled
+similarly.  See Section~\ref{Population} for more details.
+
+\subsubsection{\texttt{tournament()}}\label{xref:tournament}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{Usually calls:} \raggedright\texttt{Population::selectCohort()}, \texttt{Individual::reInitialise()}, \hyperref[no]{\texttt{calcFitnessFor()}}{\texttt{calcFitnessFor()}}{xref:calcFitnessFor}, \hyperref[no]{\texttt{makeFamilies()}}{\texttt{makeFamilies()}}{xref:makeFamilies}, \hyperref[no]{\texttt{crossoverFamily()}}{\texttt{crossoverFamily()}}{xref:crossoverFamily}, \hyperref[no]{\texttt{extraLogInfo()}}{\texttt{extraLogInfo()}}{xref:extraLogInfo}, \hyperref[no]{\texttt{saveOutput()}}{\texttt{saveOutput()}}{xref:saveOutput} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{TournamentSize}}{\texttt{TournamentSize}}{xref:TournamentSize}, \hyperref[no]{\texttt{TournamentKillAge}}{\texttt{TournamentKillAge}}{xref:TournamentKillAge}, \hyperref[no]{\texttt{ForkForEval}}{\texttt{ForkForEval}}{xref:ForkForEval}, \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness}, \hyperref[no]{\texttt{TournamentsSinceBest}}{\texttt{TournamentsSinceBest}}{xref:TournamentsSinceBest}, \hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}, \hyperref[no]{\texttt{LogInterval}}{\texttt{LogInterval}}{xref:LogInterval}
+\end{flushleft}
+
+This is where it all happens.  First a cohort\footnote{Cohort: ``A
+band of warriors'' according to the Concise Oxford Dictionary} of size
+\hyperref[no]{\texttt{TournamentSize}}{\texttt{TournamentSize}}{xref:TournamentSize} is generated by calling the Population's
+\hyperref[no]{\texttt{selectCohort()}}{\texttt{selectCohort()}}{xref:selectCohort} method.  The Individuals in the cohort whose
+\hyperref[no]{\texttt{Age}}{\texttt{Age}}{xref:Age} is greater than or equal to \hyperref[no]{\texttt{TournamentKillAge}}{\texttt{TournamentKillAge}}{xref:TournamentKillAge}
+are removed and labelled ``old'', and those that remain are called
+``young''.
+
+The fitnesses of each young Individual are either retrieved from
+memory (see Section~\ref{xref:memory} and \hyperref[no]{\texttt{AlwaysEvalFitness}}{\texttt{AlwaysEvalFitness}}{xref:AlwaysEvalFitness}) or
+calculated afresh with a call to \hyperref[no]{\texttt{calcFitnessFor()}}{\texttt{calcFitnessFor()}}{xref:calcFitnessFor}.  Before
+\hyperref[no]{\texttt{calcFitnessFor()}}{\texttt{calcFitnessFor()}}{xref:calcFitnessFor} is invoked, the \hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise}
+method is called on the Individual, to redefine any evolved methods,
+such as \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput}.  This is important, because
+otherwise all Individuals would generate the same outputs.
+
+There is an option to restrict run-time with an \texttt{alarm()} call
+(see \hyperref[no]{\texttt{calcFitnessFor}}{\texttt{calcFitnessFor}}{xref:calcFitnessFor} and \hyperref[no]{\texttt{AlarmTime}}{\texttt{AlarmTime}}{xref:AlarmTime}).  Sometimes this
+causes instability in Perl when the alarm call arrives (particularly
+when it interrupts the evaluation of regular expressions).  A
+work-around is to do the fitness calculation in a forked process by
+setting the \hyperref[no]{\texttt{ForkForEval}}{\texttt{ForkForEval}}{xref:ForkForEval} attribute.  Before any fitness
+evaluation is performed, the fitness of the Individual is set to
+\hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}, in case something goes wrong during
+forking or as a result of alarm calls.
+
+The \hyperref[no]{\texttt{Age}}{\texttt{Age}}{xref:Age} of each young Individual is incremented by one every
+tournament.
+
+The young Individuals are sorted by fitness, so that the best
+Individuals are at the top of the list.  The old Individuals are
+added back to the bottom of the list.  The method
+\hyperref[no]{\texttt{makeFamilies()}}{\texttt{makeFamilies()}}{xref:makeFamilies} is called to convert the sorted cohort into an
+array of ``families'' each containing four individuals: two parents
+and two unfit Individuals which will be replaced when the parents
+reproduce (see \hyperref[no]{\texttt{crossoverFamily()}}{\texttt{crossoverFamily()}}{xref:crossoverFamily}).
+
+
+A number of log-files are created or appended every
+\hyperref[no]{\texttt{LogInterval}}{\texttt{LogInterval}}{xref:LogInterval} tournaments.  The most important is
+`results/tournament.log', where a summary of the run's progress
+through time is stored.  Table~\ref{tab:tournlog} explains the format
+of this file.  Additional columns can be specified by redefining
+\hyperref[no]{\texttt{extraLogInfo()}}{\texttt{extraLogInfo()}}{xref:extraLogInfo} for both the Algorithm and Individual objects.
+The output of the best-of-tournament Individual for both training and
+testing data are saved using \hyperref[no]{\texttt{saveOutput()}}{\texttt{saveOutput()}}{xref:saveOutput} (to
+`results/recent.training.output' and `results/recent.testing.output')
+and the Perl code is also written to a file (`results/recent.pl').
+
+\begin{table}
+\caption{Descriptions of columns in `results/tournament.log'\label{tab:tournlog}}
+\begin{center}
+\begin{tabular}{rl}
+\hline
+column & description \\
+\hline
+1 & unix time when log was updated\\
+2 & tournament number\\
+3 & \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness} - best (training) fitness seen so far\\
+4 & (training) \hyperref[no]{\texttt{Fitness}}{\texttt{Fitness}}{xref:Fitness} of best-of-tournament Individual\\
+5 & test set fitness for the same Individual as in column 4\\
+6 & result of best-of-tournament \texttt{Individual::Age()}\\
+7 & result of best-of-tournament \texttt{Individual::getSize()}\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+If the best-of-tournament Individual has better fitness than
+\hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness} (this usually means this is the best Individual
+seen so far), the files discussed above are always saved (as
+`results/best.*'), even if logging is not being done this tournament.
+\hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness} is updated and the counter
+\hyperref[no]{\texttt{TournamentsSinceBest}}{\texttt{TournamentsSinceBest}}{xref:TournamentsSinceBest} is reset to zero.
+
+
+
+\subsubsection{\texttt{calcFitnessFor()}}\label{xref:calcFitnessFor}
+\begin{flushleft}
+\textit{Arguments:} \textsc{object} \textit{individual}, \textsc{scalar} \textit{inputdata} \\
+\textit{Return value (array context):} \textsc{number} \textit{fitness}, \textsc{scalar} \textit{outputdata}\\
+\textit{Return value (scalar context):} \textsc{number} \textit{fitness}\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{Usually calls:} \texttt{Individual::evaluateOutput()}, \hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}, \hyperref[no]{\texttt{AlarmTime}}{\texttt{AlarmTime}}{xref:AlarmTime}
+\end{flushleft}
+
+This method just runs \textit{individual}\hyperref[no]{\texttt{->evaluateOutput()}}{\texttt{->evaluateOutput()}}{xref:evaluateOutput} on \textit{inputdata}
+and then runs \hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction} on the returned output.
+There are a few extra details; firstly, if \hyperref[no]{\texttt{AlarmTime}}{\texttt{AlarmTime}}{xref:AlarmTime} is
+non-zero, a system alarm call is set for \hyperref[no]{\texttt{AlarmTime}}{\texttt{AlarmTime}}{xref:AlarmTime} seconds.
+The call to \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} is protected within an
+\texttt{eval\{ \}} block, so that run-time errors or alarm calls do
+not terminate the entire GP run, but just the evaluation within the
+block.  The call to \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} is also timed using the
+\texttt{times()} Perl function/system call, which gives precision to
+around 0.01s.  The elapsed time is passed to
+\hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction}.  The result of
+\textit{individual}\hyperref[no]{\texttt{->getSize()}}{\texttt{->getSize()}}{xref:getSize} is also passed to
+\hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction}.
+
+\subsubsection{\texttt{makeFamilies()}}\label{xref:makeFamilies}
+\begin{flushleft}
+\textit{Arguments:} \textsc{arrayref} \textit{cohort}, \textsc{arrayref} \textit{families}\\
+\textit{Return value:} void (but \textit{families} is filled)\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{TournamentParents}}{\texttt{TournamentParents}}{xref:TournamentParents}, \hyperref[no]{\texttt{MateChoiceRandom}}{\texttt{MateChoiceRandom}}{xref:MateChoiceRandom}
+\end{flushleft}
+
+The argument \textit{cohort} is a reference to an array of Individuals
+(which are presumably sorted by fitness and age).  This method
+generates ``families'' containing two potential parents and two
+Individuals which will be replaced by their offspring.  First we
+remove the first \hyperref[no]{\texttt{TournamentParents}}{\texttt{TournamentParents}}{xref:TournamentParents} elements from
+\textit{cohort} and put them in an array called \textit{parents}.
+Likewise we take the last \hyperref[no]{\texttt{TournamentParents}}{\texttt{TournamentParents}}{xref:TournamentParents} elements from
+\textit{cohort} and put them in an array called \textit{rip} (from Rest In
+Peace).  Then while these two arrays each contain at least two elements, we
+generate families as follows:
+\begin{itemize}
+\item take Parent 1 from top of \textit{parents}
+\begin{itemize}
+\item\fbox{default:} take Parent 2 from top of \textit{parents}
+\item\fbox{if \hyperref[no]{\texttt{MateChoiceRandom}}{\texttt{MateChoiceRandom}}{xref:MateChoiceRandom} is non-zero:} take Parent 2 from any
+top-biased position in \textit{parents} (using the
+rand(rand()) approach, see source code for details).
+\end{itemize}
+\item take (potential) Child 1 from top of \textit{rip}
+\item take Child 2 from top of \textit{rip}
+\end{itemize}
+
+The array pointed to by \textit{families} is filled with references to
+four-member arrays containing Parents 1\&2 and Children 1\&2.  This
+routine does not check that \textit{families} is empty.
+
+\subsubsection{\texttt{crossoverFamily()}}\label{xref:crossoverFamily}
+\begin{flushleft}
+\textit{Arguments:} \textsc{arrayref} \textit{family}\\
+\textit{Return value:} void\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{Usually calls:} \texttt{Individual::crossover()}, \texttt{Individual::mutate()}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This method takes a single family (generated by
+\hyperref[no]{\texttt{makeFamilies()}}{\texttt{makeFamilies()}}{xref:makeFamilies}) and initiates the crossover mechanism (which
+is a method in the Individual class).  The two offspring from the
+crossover overwrite the two Individuals which were selected to ``die''
+and \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate} is called on each offspring.
+
+However, \textbf{crossover is not performed} if the fitnesses of the
+two parents are numerically identical.  If they are identical then the
+second parent is subjected to mutation, and the two Individuals that
+would have been replaced by offspring survive.
+
+
+\subsubsection{\texttt{decideBetterFitness()}}\label{xref:decideBetterFitness}
+\begin{flushleft}
+\textit{Arguments:} \textsc{number} \textit{fitness1}, \textsc{number} \textit{fitness2}\\
+\textit{Return value:} \textsc{boolean}\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{FitnessDirection}}{\texttt{FitnessDirection}}{xref:FitnessDirection}
+\end{flushleft}
+
+A simple wrapper which returns true if \textit{fitness1} is greater
+than \textit{fitness2} if the \hyperref[no]{\texttt{FitnessDirection}}{\texttt{FitnessDirection}}{xref:FitnessDirection} is `up'.  If
+the direction is `down' then less-than is used.
+
+\subsubsection{\texttt{stopCondition()}}\label{xref:stopCondition}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} \textsc{boolean}\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+As supplied, this method always returns false, so a run will continue
+until \hyperref[no]{\texttt{Tournaments}}{\texttt{Tournaments}}{xref:Tournaments} have been completed.  If you override it to
+perfom some check, perhaps on \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness}, then you can
+cleanly stop the run when some criteria have been met.  Make sure you
+are not running perlgp-run.pl with the -loop option, or it will just
+start again!
+
+\subsubsection{\texttt{extraLogInfo()}}\label{xref:extraLogInfo}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} \textsc{string} text\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+If you need need more info about the progress of your Algorithm in
+`results/tournament.log', then override this method to return a string
+which will be printed out in the log.  See
+\hyperref[no]{\texttt{parseExtraLogInfo()}}{\texttt{parseExtraLogInfo()}}{xref:parseExtraLogInfo} before you implement this function.
+
+\subsubsection{\texttt{parseExtraLogInfo()}}\label{xref:parseExtraLogInfo}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} lastline\\
+\textit{Return value:} void\\
+\textit{Defined in:} Tournament.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::\_init()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+If you have restartable runs and you have special variables/attributes
+that need to persist between restarts, then you can re-initialise them
+from the values last written to `results/tournament.log' by overriding
+this method.  First make sure that the attributes are written to
+`results/tournament.log' by overriding \hyperref[no]{\texttt{extraLogInfo()}}{\texttt{extraLogInfo()}}{xref:extraLogInfo}, but
+make sure each value is preceded by a unique string.  Then implement
+\hyperref[no]{\texttt{parseExtraLogInfo()}}{\texttt{parseExtraLogInfo()}}{xref:parseExtraLogInfo} to recover those values from the last
+line of the log file as in the example below:
+
+\begin{verbatim}
+sub extraLogInfo {
+  my $self = shift;
+  return sprintf "SpecialAttrib %3d", $self->SpecialAttrib();
+}
+
+sub parseExtraLogInfo {
+  my ($self, $lastline) = @_;
+  if ($lastline =~ /\s+SpecialAttrib\s+(\d+)/) {
+    $self->SpecialAttrib($1);
+  }
+}
+\end{verbatim} %$
+
+See Section~\ref{xref:getset} on the dual use of attribute names as method
+names if the use of \texttt{SpecialAttrib()} is not clear to you.
+
+\subsection{Attributes \& Variables}
+
+Attributes marked with * \emph{must} be defined in
+\texttt{Algorithm::\_init()} for each new application/experiment.
+
+\subsubsection{\texttt{TrainingSet}*}\label{xref:TrainingSet}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} none\\
+\textit{Defined in:} Algorithm.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{loadData()}}{\texttt{loadData()}}{xref:loadData}\\
+\textit{See also:} \hyperref[no]{\texttt{TestingSet}}{\texttt{TestingSet}}{xref:TestingSet}
+\end{flushleft}
+
+This is the name of the file which contains the training data and is
+eventually passed to \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}.
+
+\subsubsection{\texttt{TestingSet}*}\label{xref:TestingSet}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} none\\
+\textit{Defined in:} Algorithm.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{loadData()}}{\texttt{loadData()}}{xref:loadData}\\
+\textit{See also:} \hyperref[no]{\texttt{TrainingSet}}{\texttt{TrainingSet}}{xref:TrainingSet}
+\end{flushleft}
+
+This is the name of the file which contains the testing data and is
+eventually passed to \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}.
+
+\subsubsection{\texttt{FitnessDirection}*}\label{xref:FitnessDirection}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} none\\
+\textit{Defined in:} Algorithm.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament} \\
+\textit{See also:} \hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}
+\end{flushleft}
+
+May take the values `up' or `down' depending how your fitness measure
+works.  Set it to `up' if a big number means good fitness, and `down'
+otherwise.
+
+\subsubsection{\texttt{WorstPossibleFitness}}\label{xref:WorstPossibleFitness}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0 or 1e99\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}, \hyperref[no]{\texttt{calcFitnessFor()}}{\texttt{calcFitnessFor()}}{xref:calcFitnessFor}\\
+\textit{See also:} \hyperref[no]{\texttt{FitnessDirection}}{\texttt{FitnessDirection}}{xref:FitnessDirection}
+\end{flushleft}
+
+This is set automatically in \texttt{TournamentGP::\_init()} if you
+don't provide a value for it.  See Section~\ref{Algorithm::_init}.
+
+\subsubsection{\texttt{Population}}\label{xref:Population}
+\begin{flushleft}
+\textit{Data type:} \textsc{object}\\
+\textit{Default:} none\\
+\textit{Defined in:} perlgp-run.pl\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:}
+\end{flushleft}
+
+Each Algorithm object \textit{has a} Population object, and this is
+where it is stored.
+
+\subsubsection{\texttt{Tournament}}\label{xref:Tournament}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 1\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}, \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{Tournaments}}{\texttt{Tournaments}}{xref:Tournaments}
+\end{flushleft}
+
+This variable contains the current tournament number.  In the case of
+restarted runs, it is initialised to the value in the last line of
+`results/tournament.log' (see Table~\ref{tab:tournlog}), otherwise it
+defaults to 1.  It is incremented in \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}.
+
+\subsubsection{\texttt{Tournaments}}\label{xref:Tournaments}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 1000\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{See also:} \hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament}
+\end{flushleft}
+
+This is the number of tournaments that \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run} tries to run,
+regardless of the initial value of \hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament} (in the case of
+a restart).
+
+\subsubsection{\texttt{TournamentsSinceBest}}\label{xref:TournamentsSinceBest}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness}
+\end{flushleft}
+
+This is a counter, like \hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament} which is incremented every
+tournament, however this is reset to zero when a new best-of-run
+(fitness better than \hyperref[no]{\texttt{BestFitness}}{\texttt{BestFitness}}{xref:BestFitness}) Individual is found.
+
+\subsubsection{\texttt{BestFitness}}\label{xref:BestFitness}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} value of \hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{WorstPossibleFitness}}{\texttt{WorstPossibleFitness}}{xref:WorstPossibleFitness}
+\end{flushleft}
+
+This variable holds the fitness of the best-of-run Individual and is
+used for checking to see when a new best-of-run Individual is found.
+On restarts it is reinitialised from `results/tournament.log'.  The
+term ``best-of-run'' may not always mean exactly that; if for example
+the \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} routine is used to dynamically change the
+training data.
+
+\subsubsection{\texttt{TournamentSize}}\label{xref:TournamentSize}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 50\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{TournamentParents}}{\texttt{TournamentParents}}{xref:TournamentParents}
+\end{flushleft}
+
+The number of Individuals chosen for each tournament.
+
+\subsubsection{\texttt{TournamentParents}}\label{xref:TournamentParents}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 20\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{makeFamilies()}}{\texttt{makeFamilies()}}{xref:makeFamilies}\\
+\textit{See also:} \hyperref[no]{\texttt{TournamentSize}}{\texttt{TournamentSize}}{xref:TournamentSize}
+\end{flushleft}
+
+The number of parents given the chance to reproduce during a
+tournament.  It's a good idea if this is an even number, and is less
+than or equal to half of \hyperref[no]{\texttt{TournamentSize}}{\texttt{TournamentSize}}{xref:TournamentSize}.
+
+\subsubsection{\texttt{TournamentKillAge}}\label{xref:TournamentKillAge}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 2\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:}
+\end{flushleft}
+
+Individuals in a tournament which have taken part in
+\hyperref[no]{\texttt{TournamentKillAge}}{\texttt{TournamentKillAge}}{xref:TournamentKillAge} or more tournaments are not sorted on
+fitness, but are automatically placed at the bottom of the list.  This
+ensures constant turnover and is the opposite of elitism.  If you find
+that your population is never ``getting off the ground'', consider
+raising this to 4 or maybe more.  You can think of
+\hyperref[no]{\texttt{TournamentKillAge}}{\texttt{TournamentKillAge}}{xref:TournamentKillAge} as the number of attempts allowed for each
+Individual to produce viable offspring.
+
+\subsubsection{\texttt{AlwaysEvalFitness}}\label{xref:AlwaysEvalFitness}
+\begin{flushleft}
+\textit{Data type:} \textsc{boolean}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:}
+\end{flushleft}
+
+When true, forces re-evaluation of fitnesses every tournament (and
+does not take the value from memory to save time).
+
+\subsubsection{\texttt{MateChoiceRandom}}\label{xref:MateChoiceRandom}
+\begin{flushleft}
+\textit{Data type:} \textsc{boolean}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{makeFamilies()}}{\texttt{makeFamilies()}}{xref:makeFamilies}\\
+\textit{See also:}
+\end{flushleft}
+
+When true, the second parent (the first is always taken from the top
+of the fitness-sorted list of Individuals) is taken from a random
+position in the list, but this position is biased towards the top.
+
+\subsubsection{\texttt{TournamentLogFile}}\label{xref:TournamentLogFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/tournament.log'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{LogInterval}}{\texttt{LogInterval}}{xref:LogInterval}
+\end{flushleft}
+
+The name of the main log file.
+
+\subsubsection{\texttt{LogInterval}}\label{xref:LogInterval}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 10\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{TournamentLogFile}}{\texttt{TournamentLogFile}}{xref:TournamentLogFile}, \hyperref[no]{\texttt{FitnessesFile}}{\texttt{FitnessesFile}}{xref:FitnessesFile}, \hyperref[no]{\texttt{RecentTrainingOutputFile}}{\texttt{RecentTrainingOutputFile}}{xref:RecentTrainingOutputFile}, \hyperref[no]{\texttt{RecentTestingOutputFile}}{\texttt{RecentTestingOutputFile}}{xref:RecentTestingOutputFile}, \hyperref[no]{\texttt{RecentCodeFile}}{\texttt{RecentCodeFile}}{xref:RecentCodeFile}
+\end{flushleft}
+
+How often \hyperref[no]{\texttt{TournamentLogFile}}{\texttt{TournamentLogFile}}{xref:TournamentLogFile}, \hyperref[no]{\texttt{FitnessesFile}}{\texttt{FitnessesFile}}{xref:FitnessesFile} and some
+other log files are written.
+
+\subsubsection{\texttt{FitnessesFile}}\label{xref:FitnessesFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/fitnesses'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{LogInterval}}{\texttt{LogInterval}}{xref:LogInterval}
+\end{flushleft}
+
+The log file where the sorted fitnesses of the Individuals in the last
+tournament are saved.  The file does not contain the fitnesses of the
+Individuals older than \hyperref[no]{\texttt{TournamentKillAge}}{\texttt{TournamentKillAge}}{xref:TournamentKillAge}.
+
+\subsubsection{\texttt{ComplexityLogFile}}\label{xref:ComplexityLogFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/complexity.log'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{See also:} \hyperref[no]{\texttt{ComplexityInterval}}{\texttt{ComplexityInterval}}{xref:ComplexityInterval}
+\end{flushleft}
+
+The log file where population complexity information is saved.  
+
+\subsubsection{\texttt{ComplexityInterval}}\label{xref:ComplexityInterval}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 50\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{See also:} \hyperref[no]{\texttt{ComplexityLogFile}}{\texttt{ComplexityLogFile}}{xref:ComplexityLogFile}
+\end{flushleft}
+
+How often \hyperref[no]{\texttt{ComplexityLogFile}}{\texttt{ComplexityLogFile}}{xref:ComplexityLogFile} is written.
+
+\subsubsection{\texttt{RefreshInterval}}\label{xref:RefreshInterval}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{See also:} \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh}
+\end{flushleft}
+
+If non-zero, how often the \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} method is called.
+
+\subsubsection{\texttt{RecentTrainingOutputFile}}\label{xref:RecentTrainingOutputFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/recent.training.output'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{LogInterval}}{\texttt{LogInterval}}{xref:LogInterval}
+\end{flushleft}
+
+The file where the training data output from the recent
+best-of-tournament Individual is written (using the
+\hyperref[no]{\texttt{saveOutput()}}{\texttt{saveOutput()}}{xref:saveOutput} method).
+
+\subsubsection{\texttt{RecentTestingOutputFile}}\label{xref:RecentTestingOutputFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/recent.testing.output'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{LogInterval}}{\texttt{LogInterval}}{xref:LogInterval}
+\end{flushleft}
+
+The file where the testing data output from the recent
+best-of-tournament Individual is written (using the
+\hyperref[no]{\texttt{saveOutput()}}{\texttt{saveOutput()}}{xref:saveOutput} method).
+
+\subsubsection{\texttt{RecentCodeFile}}\label{xref:RecentCodeFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/recent.pl'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{LogInterval}}{\texttt{LogInterval}}{xref:LogInterval}
+\end{flushleft}
+
+The file where the Perl code of the recent best-of-tournament
+Individual is written.
+
+
+\subsubsection{\texttt{BestTrainingOutputFile}}\label{xref:BestTrainingOutputFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/best.training.output'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:}
+\end{flushleft}
+
+The file where the training data output from the best-of-run
+Individual is written (using the \hyperref[no]{\texttt{saveOutput()}}{\texttt{saveOutput()}}{xref:saveOutput} method).
+
+\subsubsection{\texttt{BestTestingOutputFile}}\label{xref:BestTestingOutputFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/best.testing.output'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:}
+\end{flushleft}
+
+The file where the testing data output from the
+best-of-run Individual is written (using the
+\hyperref[no]{\texttt{saveOutput()}}{\texttt{saveOutput()}}{xref:saveOutput} method).
+
+\subsubsection{\texttt{BestCodeFile}}\label{xref:BestCodeFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/best.pl'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:}
+\end{flushleft}
+
+The file where the Perl code of the best-of-run Individual is written.
+
+\subsubsection{\texttt{KeepBest}}\label{xref:KeepBest}
+\begin{flushleft}
+\textit{Data type:} \textsc{boolean}\\
+\textit{Default:} 1\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{KeepBestDir}}{\texttt{KeepBestDir}}{xref:KeepBestDir}, \hyperref[no]{\texttt{KeepMax}}{\texttt{KeepMax}}{xref:KeepMax}
+\end{flushleft}
+
+If non-zero, all the best-of-run Individuals are saved in
+\hyperref[no]{\texttt{KeepBestDir}}{\texttt{KeepBestDir}}{xref:KeepBestDir}.
+
+\subsubsection{\texttt{KeepBestDir}}\label{xref:KeepBestDir}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/keptbest'\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{KeepBest}}{\texttt{KeepBest}}{xref:KeepBest}, \hyperref[no]{\texttt{KeepMax}}{\texttt{KeepMax}}{xref:KeepMax}
+\end{flushleft}
+
+The directory in which the complete history of best-of-run Individuals
+may be saved.
+
+\subsubsection{\texttt{KeepMax}}\label{xref:KeepMax}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 100\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \texttt{to0urnament()}\\
+\textit{See also:} \hyperref[no]{\texttt{KeepBest}}{\texttt{KeepBest}}{xref:KeepBest}, \hyperref[no]{\texttt{KeepBestDir}}{\texttt{KeepBestDir}}{xref:KeepBestDir}
+\end{flushleft}
+
+If non-zero, the maximum number of best-of-run Individuals saved in
+\hyperref[no]{\texttt{KeepBestDir}}{\texttt{KeepBestDir}}{xref:KeepBestDir}.  Older Individuals are removed when the limit is
+reached (to save disk space).
+
+\subsubsection{\texttt{PopulationBackupInterval}}\label{xref:PopulationBackupInterval}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{See also:} environment variable PERLGP\_POPS
+\end{flushleft}
+
+If non-zero, how often is a tar.gz file of the complete population
+saved to the directory PERLGP\_POPS.
+
+\subsubsection{\texttt{EmigrateInterval}}\label{xref:EmigrateInterval}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{See also:}
+\end{flushleft}
+
+If non-zero, how often \texttt{Population::emigrate()}
+is called on \hyperref[no]{\texttt{Population}}{\texttt{Population}}{xref:Population}.
+
+\subsubsection{\texttt{ImmigrateInterval}}\label{xref:ImmigrateInterval}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{run()}}{\texttt{run()}}{xref:run}\\
+\textit{See also:}
+\end{flushleft}
+
+If non-zero, how often \texttt{Population::immigrate()}
+is called on \hyperref[no]{\texttt{Population}}{\texttt{Population}}{xref:Population}.
+
+\subsubsection{\texttt{AlarmTime}}\label{xref:AlarmTime}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{calcFitnessFor()}}{\texttt{calcFitnessFor()}}{xref:calcFitnessFor}\\
+\textit{See also:} \hyperref[no]{\texttt{ForkForEval}}{\texttt{ForkForEval}}{xref:ForkForEval}
+\end{flushleft}
+
+If non-zero, the number of seconds that the system \texttt{alarm()}
+call is set for, before calling \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput}.  This is a
+one-size-fits-all alarm time.  If you want the alarm time to be
+proportional to the amount of training data you have, you can put
+alarm calls directly inside the loop (over data-points) in the evolved
+\hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} method.  For example, in the sine demo in
+Section~\ref{sindemo} you could put an \texttt{alarm(1)} just before
+``begin evolved bit'' comment and an \texttt{alarm(0)}
+just after the ``end evolved bit'' comment.
+
+\subsubsection{\texttt{ForkForEval}}\label{xref:ForkForEval}
+\begin{flushleft}
+\textit{Data type:} \textsc{boolean}\\
+\textit{Default:} 0\\
+\textit{Defined in:} TournamentGP.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tournament()}}{\texttt{tournament()}}{xref:tournament}\\
+\textit{See also:} \hyperref[no]{\texttt{AlarmTime}}{\texttt{AlarmTime}}{xref:AlarmTime}
+\end{flushleft}
+
+When non-zero, forks the main process before calling
+\hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput}.  This can prevent nasty crashes with
+``panic: leave scope inconsistency'' messages when you are using
+non-zero \hyperref[no]{\texttt{AlarmTime}}{\texttt{AlarmTime}}{xref:AlarmTime} or other \texttt{alarm()} calls.  Don't
+use it unless you get these errors.
+
+\section{Class: Individual}\label{Individual}
+\subsection{Methods}
+
+There is only one method in this class which must be
+provided/implemented by the user, and it is \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput}
+(marked with a *).
+
+\subsubsection{\texttt{new()}}\label{Individual::new}
+\begin{flushleft}
+\textit{Arguments:} \hyperref[no]{\texttt{Population}}{\texttt{Population}}{xref:Population} \verb:=>: \textsc{object}, \hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId} \verb:=>: \textsc{string}, \hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem} \verb:=>: \textsc{string}, \textsc{attribute-hash} (optional)\\
+\textit{Return value:} \textsc{object}\\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly called by:} perlgp-run.pl, perlgp-rand-prog.pl \& other utility scripts\\
+\textit{Usually calls:} \texttt{\_init()}\\
+\textit{Relevant attributes:} all
+\end{flushleft}
+
+As with the Algorithm constructor, you probably don't need to call
+this unless you are developing specialist applications.  The
+obligatory arguments are: \textit{Population}, \hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId}
+and \hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem}.  For some applications it is OK to give a
+dummy value for \hyperref[no]{\texttt{Population}}{\texttt{Population}}{xref:Population}.
+
+\subsubsection{\texttt{\_init()}}\label{Individual::_init}
+\begin{flushleft}
+\textit{Arguments:} \textsc{attribute-hash}\\
+\textit{Return value:} void\\
+\textit{Defined in:} Individual.pm, GeneticProgram.pm, BaseIndividual.pm\\
+\textit{Mainly called by:} constructor\\
+\textit{Usually calls:} \texttt{\_init()} cascade (see below)\\
+\textit{Relevant attributes:} all
+\end{flushleft}
+
+As with Algorithm, this is a cascaded method where the attributes are
+set.  The defaults are defined in \texttt{GeneticProgram::\_init()}
+and you should customise the object by editing attribute/value pairs
+in \texttt{Individual::\_init()} because these override all defaults.
+
+\subsubsection{\texttt{reInitialise()}}\label{xref:reInitialise}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{Algorithm::tournament()}, \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}, \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{evalEvolvedSubs()}}{\texttt{evalEvolvedSubs()}}{xref:evalEvolvedSubs}, \hyperref[no]{\texttt{evolvedInit()}}{\texttt{evolvedInit()}}{xref:evolvedInit}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This doesn't do much in itself, but is a very important wrapper method
+- to be called whenever evolved Individual-specific methods need to be
+redefined.
+
+\subsubsection{\texttt{evalEvolvedSubs()}}\label{xref:evalEvolvedSubs}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{getCode()}}{\texttt{getCode()}}{xref:getCode}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This is where the Perl code is actually evaluated, in order to
+redefine certain Individual-specific subroutines, commonly
+\hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} and \hyperref[no]{\texttt{evolvedInit()}}{\texttt{evolvedInit()}}{xref:evolvedInit}.  The code is
+obtained using \hyperref[no]{\texttt{getCode()}}{\texttt{getCode()}}{xref:getCode} and simply passed to Perl's
+\texttt{eval()} function.  Before that, a signal handler is set to
+filter out ``Subroutine redefined'' warnings.
+
+If an error occurs during the \texttt{eval()}, this usually means that
+there is a syntax error in the evolved code (usually just subroutine
+definitions, nothing is actually executed), caused by a mistake in the
+Grammar.  Warnings are printed to STDERR and the Individual is
+randomly reinitialised with a new genome before attempting
+\hyperref[no]{\texttt{evalEvolvedSubs()}}{\texttt{evalEvolvedSubs()}}{xref:evalEvolvedSubs} again (with a 15 second sleep in between).
+The user should fix these syntax errors to make sure valid Perl is
+generated in all circumstances.
+
+\subsubsection{\texttt{evolvedInit()}}\label{xref:evolvedInit}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} all
+\end{flushleft}
+
+The supplied method does nothing, but you can provide an evolved
+version to set some of the Individual's attributes.  The sine curve
+demo in Section~\ref{sindemo} shows how to have evolvable mutation and
+crossover rates.  Note that \hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise} and hence
+\hyperref[no]{\texttt{evolvedInit()}}{\texttt{evolvedInit()}}{xref:evolvedInit} is called inside \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate} and
+\hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover} in anticipation that you might use evolvable
+mutation and crossover parameters.
+
+\subsubsection{\texttt{evaluateOutput()}*}\label{xref:evaluateOutput}
+\begin{flushleft}
+\textit{Arguments:} \textsc{scalar} \textit{inputdata}\\
+\textit{Return value:} \textsc{scalar} \textit{outputdata}\\
+\textit{Defined in:} Grammar.pm or Individual.pm\\
+\textit{Mainly called by:} \texttt{Algorithm::calcFitnessFor()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This is where you should provide the code which works on
+\textit{inputdata} and produces \textit{outputdata}.  Normally you
+would setup up the Grammar so that \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} is
+defined in the code-tree and is therefore evolved, but you could
+define \hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} as a non-evolvable function and have
+it call other evolved functions.
+
+As discussed in Section~\ref{Algorithm}, the scalar variables
+\textit{inputdata} and \textit{outputdata} are usually references to
+arrays or hashes containing multiple data points.  It is entirely up
+to you how you represent the data, since you are in control of reading
+it in (with \texttt{Algorithm::loadSet()}), generating the output (in
+\hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput}), assessing the fitness (in
+\texttt{Algorithm::fitnessFunction()}) and writing it out (in
+\texttt{Algorithm::saveOutput()}).
+
+\subsubsection{\texttt{extraLogInfo()}}\label{Individual::extraLogInfo}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} \textsc{string}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{Algorithm::tournament()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Here you can specify which extra information about the
+best-of-tournament Individual will be saved in
+`results/tournament.log'.  The default function just returns
+\hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem}, but you could have it return evolved parameters,
+for example.  The sine demo described in Section~\ref{sindemo} uses
+this technique.  
+
+\subsubsection{\texttt{crossover()}}\label{xref:crossover}
+\begin{flushleft}
+\textit{Arguments:} \textsc{object} \textit{mate}, \textsc{object} \textit{recipient1}, \textsc{object} \textit{recipient2}, \\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::crossoverFamily()}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise}, \hyperref[no]{\texttt{\_tree\_type\_size()}}{\texttt{\_tree\_type\_size()}}{xref:_tree_type_size}, \hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{NodeXoverProb}}{\texttt{NodeXoverProb}}{xref:NodeXoverProb}, \hyperref[no]{\texttt{FixedXovers}}{\texttt{FixedXovers}}{xref:FixedXovers}, \texttt{FixedXoversProb}, \hyperref[no]{\texttt{AsexualOnly}}{\texttt{AsexualOnly}}{xref:AsexualOnly}, \hyperref[no]{\texttt{XoverDepthBias}}{\texttt{XoverDepthBias}}{xref:XoverDepthBias}, \hyperref[no]{\texttt{XoverSizeBias}}{\texttt{XoverSizeBias}}{xref:XoverSizeBias}, \hyperref[no]{\texttt{XoverHomologyBias}}{\texttt{XoverHomologyBias}}{xref:XoverHomologyBias}, \hyperref[no]{\texttt{XoverLogProb}}{\texttt{XoverLogProb}}{xref:XoverLogProb}
+\end{flushleft}
+
+This method finds crossover points between the \textit{self} object
+and the \textit{mate} object.  If \hyperref[no]{\texttt{FixedXovers}}{\texttt{FixedXovers}}{xref:FixedXovers} is set and
+\hyperref[no]{\texttt{FixedXoverProb}}{\texttt{FixedXoverProb}}{xref:FixedXoverProb} is satisfied, then \hyperref[no]{\texttt{FixedXovers}}{\texttt{FixedXovers}}{xref:FixedXovers} pairs
+of crossover points will be selected.  Otherwise the default and
+recommended behaviour is to use \hyperref[no]{\texttt{NodeXoverProb}}{\texttt{NodeXoverProb}}{xref:NodeXoverProb} to calculated
+the number of crossovers to attempt, as described for in the following
+pseudocode:
+
+\begin{verbatim}
+  crossovers_to_do = 0
+  for i = 1 to number_of_nodes_in_tree {
+    if (rand(1) < NodeXoverProb) {
+      crossovers_to_do++
+    }
+  }
+\end{verbatim}
+
+Crossover point selection is a little bit complex, so only an outline
+is given here.  The general approach is to sample pairs of points
+until they satisfy certain criteria.  To prevent infinite sampling
+maximum number of samples are attempted (equivalent to sampling each
+node 100 times).  One node each from the \textit{self} and
+\textit{mate} genome trees are selected randomly (with depth bias
+\hyperref[no]{\texttt{XoverDepthBias}}{\texttt{XoverDepthBias}}{xref:XoverDepthBias}); we will call them \textit{mynode} and
+\textit{matenode} in the following discussion.  They are accepted if
+all the following conditions are met (in the order given):
+\begin{itemize}
+\item the nodes have the same nodetypes (e.g. NUM and NUM)
+\item \textit{mynode} does not exist within the subtrees of any previously chosen crossover point in \textit{self}, and likewise \textit{matenode} not in any crossover point subtree of \textit{mate}
+\item similar-size probability:
+ $ \left ( 1 - \left (\frac{|N_A - N_B|}{\max(N_A,N_B)} \right )^{s} \right ) $
+where $N_A$ and $N_B$ are the number of nodes in the two subtrees and $s$ is \hyperref[no]{\texttt{XoverSizeBias}}{\texttt{XoverSizeBias}}{xref:XoverSizeBias}
+\item similar-contents (homology) probability:
+$ \left ( \frac{I_{A,B}+0.1}{\min(N_A,N_B)} \right )^{h} $
+where $I_{A,B}$ is the number of identical nodes found when decending the two subtrees in parallel (not allowing any insertions or deletions, see \hyperref[no]{\texttt{\_tree\_id()}}{\texttt{\_tree\_id()}}{xref:_tree_id}) and $h$ is \hyperref[no]{\texttt{XoverHomologyBias}}{\texttt{XoverHomologyBias}}{xref:XoverHomologyBias}
+\item none of the subtrees of the two crossover points contain previously selected crossover points
+\end{itemize}
+
+After the crossover points have been selected, they are passed to
+\hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}.  If no crossover points were found (or
+if none were requested) then the two parents are crossed over at the
+root node, which is equivalent to asexual reproduction.  You can also
+set \hyperref[no]{\texttt{AsexualOnly}}{\texttt{AsexualOnly}}{xref:AsexualOnly} to force asexual reproduction.
+
+With probability \hyperref[no]{\texttt{XoverLogProb}}{\texttt{XoverLogProb}}{xref:XoverLogProb}, some information about
+crossover points is written to \hyperref[no]{\texttt{XoverLogFile}}{\texttt{XoverLogFile}}{xref:XoverLogFile}.
+
+\subsubsection{\texttt{\_start\_crossover()}}\label{xref:_start_crossover}
+\begin{flushleft}
+\textit{Arguments:} \textsc{object} \textit{mate}, \textsc{object} \textit{recipient}, \textsc{hash-ref} \textit{crossover\_pairs}\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_crossover()}}{\texttt{\_crossover()}}{xref:_crossover}, \hyperref[no]{\texttt{retieGenome()}}{\texttt{retieGenome()}}{xref:retieGenome}, \hyperref[no]{\texttt{\_fix\_nodes()}}{\texttt{\_fix\_nodes()}}{xref:_fix_nodes}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+A wrapper around the recursive \hyperref[no]{\texttt{\_crossover()}}{\texttt{\_crossover()}}{xref:_crossover} method, which first does a \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome} on the recipient and wipes its genome.
+
+\subsubsection{\texttt{\_crossover()}}\label{xref:_crossover}
+\begin{flushleft}
+\textit{Arguments:} \textsc{object} \textit{mate}, \textsc{object} \textit{recipient}, \textsc{string} \textit{mynode}, \textsc{string} \textit{matenode}, \textsc{hash-ref} \textit{crossover\_pairs}, \\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{\_start\_crossover}}{\texttt{\_start\_crossover}}{xref:_start_crossover} \\
+\textit{Usually calls:} recursive\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Recursive subroutine which builds up a new genome tree for
+\textit{recipient} by tracing through the \textit{self} genomes and
+switching over to the \textit{mate} genome when a
+\textit{crossover\_pair} is met.  To avoid name clashes mate nodes are
+copied with names appended with an ``x'' (see also \hyperref[no]{\texttt{\_xcopy\_subtree()}}{\texttt{\_xcopy\_subtree()}}{xref:_xcopy_subtree}) and these are tidied up by
+\hyperref[no]{\texttt{\_fix\_nodes()}}{\texttt{\_fix\_nodes()}}{xref:_fix_nodes} on returning to \hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}.
+
+
+
+\subsubsection{\texttt{mutate()}}\label{xref:mutate}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{Algorithm::crossoverFamily()}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise}, \hyperref[no]{\texttt{point\_mutate\_shallow()}}{\texttt{point\_mutate\_shallow()}}{xref:point_mutate_shallow}, \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}, \hyperref[no]{\texttt{initFitness()}}{\texttt{initFitness()}}{xref:initFitness}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{NodeMutationProb}}{\texttt{NodeMutationProb}}{xref:NodeMutationProb}, \hyperref[no]{\texttt{FixedMutations}}{\texttt{FixedMutations}}{xref:FixedMutations}, \hyperref[no]{\texttt{FixedMutationProb}}{\texttt{FixedMutationProb}}{xref:FixedMutationProb}, \hyperref[no]{\texttt{PointMutationFrac}}{\texttt{PointMutationFrac}}{xref:PointMutationFrac}, \hyperref[no]{\texttt{NoNeutralMutations}}{\texttt{NoNeutralMutations}}{xref:NoNeutralMutations}, \hyperref[no]{\texttt{MutationLogProb}}{\texttt{MutationLogProb}}{xref:MutationLogProb}, \hyperref[no]{\texttt{MutationLogFile}}{\texttt{MutationLogFile}}{xref:MutationLogFile}
+\end{flushleft}
+
+This method does one round of mutation on an Individual.  First the
+number of mutations to be attempted is
+calculated according to the following pseudocode:
+
+\begin{verbatim}
+  mutations_to_do = 0
+  for i = 1 to number_of_nodes_in_tree {
+    if (rand(1) < NodeMutationProb) {
+      mutations_to_do++
+    }
+  }
+\end{verbatim}
+
+However if \hyperref[no]{\texttt{FixedMutations}}{\texttt{FixedMutations}}{xref:FixedMutations} is non-zero and
+\hyperref[no]{\texttt{FixedMutationProb}}{\texttt{FixedMutationProb}}{xref:FixedMutationProb} is satisfied, then \hyperref[no]{\texttt{FixedMutations}}{\texttt{FixedMutations}}{xref:FixedMutations}
+are attempted.
+
+Each mutation is randomly chosen to be either point mutation (via
+method \hyperref[no]{\texttt{point\_mutate\_shallow()}}{\texttt{point\_mutate\_shallow()}}{xref:point_mutate_shallow}) or a macro mutation (via
+method \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}), according to the attribute
+\hyperref[no]{\texttt{PointMutationFrac}}{\texttt{PointMutationFrac}}{xref:PointMutationFrac}.
+
+If \hyperref[no]{\texttt{NoNeutralMutations}}{\texttt{NoNeutralMutations}}{xref:NoNeutralMutations} is non-zero, then a check is made that
+the mutation made a visible (not necessarily functional) change to the
+Perl code.  This is done by expanding the genome-tree before each
+mutation, and after each mutation and comparing the two strings.  If
+the strings are identical then another mutation is attempted (up to a
+safety limit of 5000 tries).  This feature is turned off by default.
+
+Note that we say that mutations are \textit{attempted} rather than
+performed.  That is because some of the mutation operators fail to
+find suitable nodes to act on, and as a result do nothing.
+
+After the mutations are are done, some logging is done with
+probability \hyperref[no]{\texttt{MutationLogProb}}{\texttt{MutationLogProb}}{xref:MutationLogProb} into a file
+\hyperref[no]{\texttt{MutationLogFile}}{\texttt{MutationLogFile}}{xref:MutationLogFile}, with some simple information about the nodes
+that were mutated (if they still exist - when more than one mutation
+is attempted, the subsequent mutations can delete the nodes affected
+by previous mutations).
+
+If more than one mutation was attempted, then the cached fitness of
+the Individual is reset with a call to \hyperref[no]{\texttt{initFitness()}}{\texttt{initFitness()}}{xref:initFitness}.
+
+
+\subsubsection{\texttt{point\_mutate\_shallow()}}\label{xref:point_mutate_shallow}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{PointMutationDepthBias}}{\texttt{PointMutationDepthBias}}{xref:PointMutationDepthBias}
+\end{flushleft}
+
+Simple wrapper to call \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate} with depth bias
+(\hyperref[no]{\texttt{PointMutationDepthBias}}{\texttt{PointMutationDepthBias}}{xref:PointMutationDepthBias}) more in favour of leaves.
+
+\subsubsection{\texttt{point\_mutate\_deep()}}\label{xref:point_mutate_deep}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}
+\end{flushleft}
+
+Simple wrapper to call \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate} with depth bias
+(\hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}) more in favour of internal nodes.
+
+
+\subsubsection{\texttt{point\_mutate()}}\label{xref:point_mutate}
+\begin{flushleft}
+\textit{Arguments:} \textsc{number} \textit{depthbias}\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{point\_mutate\_shallow()}}{\texttt{point\_mutate\_shallow()}}{xref:point_mutate_shallow}, \hyperref[no]{\texttt{point\_mutate\_deep()}}{\texttt{point\_mutate\_deep()}}{xref:point_mutate_deep}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{NumericMutationFrac}}{\texttt{NumericMutationFrac}}{xref:NumericMutationFrac}, \hyperref[no]{\texttt{NumericIgnoreNTypes}}{\texttt{NumericIgnoreNTypes}}{xref:NumericIgnoreNTypes}, \hyperref[no]{\texttt{NumericAllowNTypes}}{\texttt{NumericAllowNTypes}}{xref:NumericAllowNTypes}, \hyperref[no]{\texttt{NumericMutationRegex}}{\texttt{NumericMutationRegex}}{xref:NumericMutationRegex}
+\end{flushleft}
+
+Attempts to make a point mutation, that is a change in the genome-tree
+which does not affect the branching pattern and involves just one
+node.  The first thing it does is select a random node with depth bias
+\textit{depthbias}.
+
+
+\subsubsection{\texttt{\_random\_node()}}\label{xref:_random_node}
+\begin{flushleft}
+\textit{Arguments:} \texttt{depth\_bias} \verb:=>: \textsc{number}, \texttt{start\_node} \verb:=>: \textsc{string} (optional), \texttt{not\_this\_node} \verb:=>: \textsc{string} (optional), \texttt{not\_this\_subtree} \verb:=>: \textsc{string} (optional), \texttt{node\_type} \verb:=>: \textsc{string}\\
+\textit{Return value:} \textsc{string} \textit{nodekey}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} mutation and crossover operators\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Picks one node from the genome-tree according to the following pseudocode:
+
+\begin{verbatim}
+  N = number_of_nodes_below(root_of_tree)
+  do {
+    node = pick_a_random_node_from_tree
+    S = number_of_nodes_below(node)
+  } until rand(depth_bias * N) <= S
+\end{verbatim}
+
+In this way, it is possible to vary the amount of bias towards
+internal nodes.  With a \texttt{depth\_bias} of zero, all nodes are
+selected with equal probability, but with a \texttt{depth\_bias} of 1
+only the root node will be selected with absolute certainty.  Of
+course, it is not very time-efficient to sample nodes in this way.
+
+Other optional parameters allow a specific node type to be selected,
+or nodes within or outside a certain subtree.  If a node cannot be
+found after 5000 tries, the routine gives up and returns the empty
+string.
+
+\subsubsection{\texttt{macro\_mutate()}}\label{xref:macro_mutate}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{Usually calls:} macro mutation operators\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MacroMutationTypes}}{\texttt{MacroMutationTypes}}{xref:MacroMutationTypes}
+\end{flushleft}
+
+Picks at random one of the available macro mutation operator names
+from the array \hyperref[no]{\texttt{MacroMutationTypes}}{\texttt{MacroMutationTypes}}{xref:MacroMutationTypes} and invokes the method of that name (in Perl you can call a method using a string variable like this: \verb:$method = 'swap_subtrees'; $individual->$method():). %$
+
+\subsubsection{\texttt{replace\_subtree()}}\label{xref:replace_subtree}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}, \hyperref[no]{\texttt{\_del\_subtree()}}{\texttt{\_del\_subtree()}}{xref:_del_subtree}, \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{NewSubtreeDepthMean}}{\texttt{NewSubtreeDepthMean}}{xref:NewSubtreeDepthMean}, \hyperref[no]{\texttt{NewSubtreeDepthMax}}{\texttt{NewSubtreeDepthMax}}{xref:NewSubtreeDepthMax}
+\end{flushleft}
+
+Picks a random node with \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias} and deletes
+the subtree and ``grows'' a new subtree in its place.
+
+\subsubsection{\texttt{insert\_internal()}}\label{xref:insert_internal}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}, \hyperref[no]{\texttt{\_random\_function()}}{\texttt{\_random\_function()}}{xref:_random_function}, \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}, \hyperref[no]{\texttt{NewSubtreeDepthMean}}{\texttt{NewSubtreeDepthMean}}{xref:NewSubtreeDepthMean}, \hyperref[no]{\texttt{NewSubtreeDepthMax}}{\texttt{NewSubtreeDepthMax}}{xref:NewSubtreeDepthMax}
+\end{flushleft}
+
+Inserts a single new function node internally in a tree.
+
+First we pick a random node with \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias} and
+copy its contents to a brand new node.  The original node is then
+replaced with a random function with at least one branch point of the
+same type as the original node (if none exists, then we give up).  We
+link up one of these branch points back to the new node, and any
+remaining branch points have new subtrees grown onto them.
+Figure~\ref{fig:insert_internal} illustrates this complicated
+procedure.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.66\textwidth]{figures/insert_internal}
+\end{center}
+\caption{\label{fig:insert_internal}Example of the macro mutation operator \hyperref[no]{\texttt{insert\_internal}}{\texttt{insert\_internal}}{xref:insert_internal}.  The `+' node is chosen for mutation, and is moved to a new location.  A new node `*' is inserted in the old position and one of its two branch points is connected back to the `+'.  The remaining branch point for the `*' function is filled out with a new tree, which in this case is just a single node `3'.}
+\end{figure}
+
+\subsubsection{\texttt{delete\_internal()}}\label{xref:delete_internal}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}
+\end{flushleft}
+
+Selects a node with \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}, and then, if
+possible, a second node of the same type \textit{within} the subtree
+of the first.  The two nodes are reconnected and the intervening nodes
+are deleted (actually it is implemented in another way, but the result
+is the same).
+
+\subsubsection{\texttt{copy\_subtree()}}\label{xref:copy_subtree}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}, \hyperref[no]{\texttt{\_del\_subtree()}}{\texttt{\_del\_subtree()}}{xref:_del_subtree}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}
+\end{flushleft}
+
+Selects a node with \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}, and then, if
+possible, a second node of the same type \textit{outside} the subtree
+of the first.  Deletes any sub-nodes belonging to the second node and
+copy the first node's subtree to the second node.
+
+\subsubsection{\texttt{swap\_subtrees()}}\label{xref:swap_subtrees}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}
+\end{flushleft}
+
+Like \hyperref[no]{\texttt{copy\_subtree}}{\texttt{copy\_subtree}}{xref:copy_subtree}, except that no nodes are deleted, the
+subtrees exchange positions.
+
+
+\subsubsection{\texttt{encapsulate\_subtree()}}\label{xref:encapsulate_subtree}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}, \hyperref[no]{\texttt{\_expand\_tree()}}{\texttt{\_expand\_tree()}}{xref:_expand_tree}, \hyperref[no]{\texttt{simplify()}}{\texttt{simplify()}}{xref:simplify}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}, \hyperref[no]{\texttt{EncapsulateIgnoreNTypes}}{\texttt{EncapsulateIgnoreNTypes}}{xref:EncapsulateIgnoreNTypes}, \hyperref[no]{\texttt{EncapsulateFracMax}}{\texttt{EncapsulateFracMax}}{xref:EncapsulateFracMax}\\
+\textit{Relevant methods:} \hyperref[no]{\texttt{getSize()}}{\texttt{getSize()}}{xref:getSize}
+\end{flushleft}
+
+An experimental, \textit{not fully tested} method which takes a
+subtree (which represents not more than fraction
+\hyperref[no]{\texttt{EncapsulateFracMax}}{\texttt{EncapsulateFracMax}}{xref:EncapsulateFracMax} of the whole tree) and replaces it with a
+single terminal node containing the expanded code of the former
+subtree.  The code is passed through \hyperref[no]{\texttt{simplify()}}{\texttt{simplify()}}{xref:simplify} to remove any
+redundancy (if you implement the method).  The new node is tagged with
+a special prefix string `;;NUM;;' where `NUM' is the size of the
+subtree before encapsulation.  This number is used in
+\hyperref[no]{\texttt{\_tree\_type\_size()}}{\texttt{\_tree\_type\_size()}}{xref:_tree_type_size} (which is sometimes called by
+\hyperref[no]{\texttt{getSize()}}{\texttt{getSize()}}{xref:getSize}) during tree size calculation to make it fair when
+parsimony is used.  As I said, this needs a thorough investigation
+because things have changed since I last used encapsulation, and it is
+a pretty complicated operator with many side effects.
+
+\subsubsection{\texttt{simplify()}}\label{xref:simplify}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{longcode}\\
+\textit{Return value:} \textsc{string} \texttt{shortercode}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{encapsulate\_subtree()}}{\texttt{encapsulate\_subtree()}}{xref:encapsulate_subtree}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+The default method does nothing, but you can define a method to do
+search-and-replace-with-eval simplification, for example:
+
+\begin{verbatim}
+  sub simplify {
+    my ($self, $code) = @_;
+    my $z = 0;
+    while ($code =~ s/(\d+ \+ \d+)/eval $1/e) {
+      last if ($z++ > 1000); # safety measure
+    }
+    return $code;
+  }
+\end{verbatim}%$
+
+\noindent will simplify `1 + 2 + 3 + 4' to `10'.  This can be very
+powerful for creating human-readable output.
+
+
+\subsubsection{\texttt{\_xcopy\_subtree()}}\label{xref:_xcopy_subtree}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodekey}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} recursive\\
+\textit{Relevant methods:} \hyperref[no]{\texttt{\_fix\_nodes()}}{\texttt{\_fix\_nodes()}}{xref:_fix_nodes}
+\end{flushleft}
+
+A helper method which takes a node and generates a copy of its subtree
+with new nodekeys which are the same as the original tree plus a
+trailing `x' (so `nodeNUM23' is copied to `nodeNUM23x').  This is a
+simple way to avoid node key clashes, as long as you call
+\hyperref[no]{\texttt{\_fix\_nodes()}}{\texttt{\_fix\_nodes()}}{xref:_fix_nodes} afterwards...
+
+\subsubsection{\texttt{\_fix\_nodes()}}\label{xref:_fix_nodes}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodekey}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{delete\_internal()}}{\texttt{delete\_internal()}}{xref:delete_internal}, \hyperref[no]{\texttt{copy\_subtree()}}{\texttt{copy\_subtree()}}{xref:copy_subtree}, \hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}\\
+\textit{Usually calls:} recursive\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Recursive method to fix the nodekeys which end in `x' and replace them
+with valid nodekeys which don't end in `x'.  It searches incrementally
+for new unused nodekeys from zero (in other words, `nodeNUM14x' is
+replaced by `nodeNUM0' and if that already exists, then `nodeNUM1',
+`nodeNUM2' \dots until a free key is found).
+
+\subsubsection{\texttt{\_get\_subnodes()}}\label{xref:_get_subnodes}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodekey}\\
+\textit{Return value:} \textsc{array} \textit{subnodes}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}, \hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node}, \texttt{\_copy\_subtree()}\\
+\textit{Usually calls:} recursive\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Returns the nodekeys of all subnodes of the given \textit{nodekey}.
+
+\subsubsection{\texttt{\_del\_subtree()}}\label{xref:_del_subtree}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodekey}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{\_replace\_subtree()}, \texttt{\_delete\_internal()}, \texttt{\_copy\_subtree()}, \hyperref[no]{\texttt{encapsulate\_subtree()}}{\texttt{encapsulate\_subtree()}}{xref:encapsulate_subtree}\\
+\textit{Usually calls:} recursive\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Recursive method which ``on the way out'' deletes all the nodes in the
+given subtree.
+
+
+\subsubsection{\texttt{\_tree\_type\_size()}}\label{xref:_tree_type_size}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodekey}, \textsc{hashref} \textit{sizes} (optional), \textsc{hashref} \textit{types} (optional), \textsc{hashref} \textit{ignore} (optional)\\
+\textit{Return value:} \textsc{number} \textit{nodes}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{getSize()}}{\texttt{getSize()}}{xref:getSize}, \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}, \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{Usually calls:} recursive\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This method descends a subtree (usually `root') and fills a number of
+hashes (actually the hash references given as arguments:
+\textit{sizes}, \textit{types}) with the size of the subtree below
+each node, and the nodetype of each node (the hash keys are nodekeys).
+
+If the \textit{ignore} hash reference is defined, then this routine
+will not descend subtrees of any nodetype which exists as a key in the
+\textit{ignore} hash.
+
+The methods \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover} and \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate} efficiently
+make use of the cached size information when sampling nodes and
+repeated tree recursion is not needed.
+
+\subsubsection{\texttt{\_display\_tree()}}\label{xref:_display_tree}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodekey}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Prints a text dump of the nodes below \textit{nodekey} to STDERR for
+debugging purposes.
+
+\subsubsection{\texttt{saveCode()}}\label{xref:saveCode}
+\begin{flushleft}
+\textit{Arguments:} \texttt{Filename} \verb:=>: \textsc{string}, \hyperref[no]{\texttt{Tournament}}{\texttt{Tournament}}{xref:Tournament} \verb:=>: \textsc{number}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::tournament()}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{Fitness()}}{\texttt{Fitness()}}{xref:Fitness}, \hyperref[no]{\texttt{getCode()}}{\texttt{getCode()}}{xref:getCode}, \hyperref[no]{\texttt{getSize()}}{\texttt{getSize()}}{xref:getSize}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Prints the Perl code and some other relevant information to
+\texttt{Filename} for the user.
+
+\subsubsection{\texttt{saveTree()}}\label{xref:saveTree}
+\begin{flushleft}
+\textit{Arguments:} \texttt{Filename} \verb:=>: \textsc{string}, \texttt{StartNode} \verb:=>: \textsc{string}, \texttt{HighLight} \verb:=>: \textsc{hash-ref}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::tournament()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Prints the genome tree to \texttt{Filename} in a format readable by
+the third party program daVinci.  The optional hash reference
+\texttt{HighLight} can be used to give certain background colours
+to certain nodes (key = node-id, value = hex colour).
+
+\subsubsection{\texttt{save()}}\label{xref:save}
+\begin{flushleft}
+\textit{Arguments:} \texttt{FileStem} \verb:=>: \textsc{string}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::tournament()}, \texttt{GPPopulation::emigrate()}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome}, \hyperref[no]{\texttt{untieGenome()}}{\texttt{untieGenome()}}{xref:untieGenome} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Copies the genome hash to a new DB file with \texttt{FileStem}.
+
+\subsubsection{\texttt{load()}}\label{xref:load}
+\begin{flushleft}
+\textit{Arguments:} \texttt{FileStem} \verb:=>: \textsc{string}\\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{GPPopulation::immigrate()}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome}, \hyperref[no]{\texttt{untieGenome()}}{\texttt{untieGenome()}}{xref:untieGenome} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Loads up a genome hash from a DB file with \texttt{FileStem}.  Erases
+the current genome, but consider making a call to
+\hyperref[no]{\texttt{reInitialise()}}{\texttt{reInitialise()}}{xref:reInitialise} to update evolved parameters afterwards.
+
+
+\subsubsection{\texttt{tieGenome()}}\label{xref:tieGenome}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \textsc{hash-ref}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} tree operating methods\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem}
+\end{flushleft}
+
+By default, an Individual is not ``connected'' to the DBM file
+which stores the genome.  If it was, then a typical run would
+have thousands of open filehandles and would probably crash.
+This method uses Perl's \texttt{tie()} to tie the hash stored
+in \verb:$self->{genome}: %$%
+to the file(s) identified by \hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem}.  This is
+done in read/write/create mode.  See the Perl documentation
+for \texttt{tie()} for more details.
+
+The return value is a reference to the genome hash, or you
+can use \verb:$self->{genome}: %$%
+if you prefer.
+
+Make sure you \textit{always} have a corresponding call
+to \hyperref[no]{\texttt{untieGenome()}}{\texttt{untieGenome()}}{xref:untieGenome} to avoid filehandle overload.
+Symmetrical nesting of ties and unties is allowed - if
+the genome is already tied a counter is incremented
+in \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome} which is decremented by
+\hyperref[no]{\texttt{untieGenome()}}{\texttt{untieGenome()}}{xref:untieGenome} - the actual untie is done only
+at ``depth zero''.
+
+Note that you don't want to have to many tie/untie tie/untie tie/untie
+sequences (big performance hit), it's better to wrap a tie...untie
+around them all.  This is why there are \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome} calls in
+\texttt{TournamentGP::crossoverFamily()}.  If you can't figure out
+where/when/why various tie/untie calls are not made, you can uncomment
+the debugging line and watch STDERR.
+
+If you want to completely wipe the genome, see the source code for
+\hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}.
+
+\subsubsection{\texttt{untieGenome()}}\label{xref:untieGenome}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{debug} \\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} tree operating methods\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+See \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome}.
+
+\subsubsection{\texttt{retieGenome()}}\label{xref:retieGenome}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem}
+\end{flushleft}
+
+The DBM files seem to grow with time, so this method
+will copy the genome hash into memory, and then delete
+the DBM files, and rewrite a new one.  Obviously this
+is a bit risky since there is no backup made on disk.
+
+Currently only called in \hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}
+on the recipient/child after wiping the genome.
+
+Does not affect the tie level counter (see \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome}).
+
+
+\subsubsection{\texttt{initTree()}}\label{xref:initTree}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_init\_tree()}}{\texttt{\_init\_tree()}}{xref:_init_tree}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This is a simple wrapper around \hyperref[no]{\texttt{\_init\_tree()}}{\texttt{\_init\_tree()}}{xref:_init_tree} which does
+\hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome} first and \hyperref[no]{\texttt{untieGenome()}}{\texttt{untieGenome()}}{xref:untieGenome} afterwards.
+
+\subsubsection{\texttt{\_init\_tree()}}\label{xref:_init_tree}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{TreeDepthMax}}{\texttt{TreeDepthMax}}{xref:TreeDepthMax}, \hyperref[no]{\texttt{MinTreeNodes}}{\texttt{MinTreeNodes}}{xref:MinTreeNodes}
+\end{flushleft}
+
+Initialises the genome hash and starts building a new tree of max
+depth \hyperref[no]{\texttt{TreeDepthMax}}{\texttt{TreeDepthMax}}{xref:TreeDepthMax}.  Repeats this until the number of nodes
+is greater than \hyperref[no]{\texttt{MinTreeNodes}}{\texttt{MinTreeNodes}}{xref:MinTreeNodes}.
+
+\subsubsection{\texttt{\_grow\_tree()}}\label{xref:_grow_tree}
+\begin{flushleft}
+\textit{Arguments:} \texttt{depth} \verb:=>: \textsc{integer},
+\texttt{type} \verb:=>: \textsc{string},
+\hyperref[no]{\texttt{TreeDepthMax}}{\texttt{TreeDepthMax}}{xref:TreeDepthMax} \verb:=>: \textsc{integer} \\
+\textit{Return value:} \textsc{string} \textit{new\_nodekey}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} macro mutation operators, \hyperref[no]{\texttt{\_init\_tree()}}{\texttt{\_init\_tree()}}{xref:_init_tree}\\
+\textit{Usually calls:} recursive, \hyperref[no]{\texttt{\_random\_terminal()}}{\texttt{\_random\_terminal()}}{xref:_random_terminal}, \hyperref[no]{\texttt{\_random\_function}}{\texttt{\_random\_function}}{xref:_random_function}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{TreeDepthMin}}{\texttt{TreeDepthMin}}{xref:TreeDepthMin}, \hyperref[no]{\texttt{TerminateTreeProb}}{\texttt{TerminateTreeProb}}{xref:TerminateTreeProb}
+\end{flushleft}
+
+Builds a tree or subtree by randomly selecting functions and
+terminals.  \hyperref[no]{\texttt{TreeDepthMax}}{\texttt{TreeDepthMax}}{xref:TreeDepthMax} is passed as an argument (the object
+attribute of the same name is not used) because you might want to use
+different limits for the whole tree \textit{vs.} subtrees.  The
+\texttt{depth} argument is incremented on each recursive call.
+Usually a function is chosen during tree building but if the depth is
+greater than \hyperref[no]{\texttt{TreeDepthMax}}{\texttt{TreeDepthMax}}{xref:TreeDepthMax} then a terminal is always added.
+Alternatively you may use \hyperref[no]{\texttt{TreeDepthMin}}{\texttt{TreeDepthMin}}{xref:TreeDepthMin} \textit{and}
+\hyperref[no]{\texttt{TerminateTreeProb}}{\texttt{TerminateTreeProb}}{xref:TerminateTreeProb} to force termination with some probability
+below a vertain depth.
+
+\subsubsection{\texttt{\_expand\_tree()}}\label{xref:_expand_tree}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodekey}\\
+\textit{Return value:} \textsc{string} \textit{perl\_code}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{getCode()}}{\texttt{getCode()}}{xref:getCode}, \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}, \hyperref[no]{\texttt{encapsulate\_subtree()}}{\texttt{encapsulate\_subtree()}}{xref:encapsulate_subtree}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MaxTreeNodes}}{\texttt{MaxTreeNodes}}{xref:MaxTreeNodes}
+\end{flushleft}
+
+This method expands the tree below \textit{nodekey} into a single
+string which I presumably Perl code (or at least something that will
+\texttt{eval()}). It is done with an iterated search-and-replace.  A
+counter keeps track of how many nodes have been expanded and if this
+is greater than \hyperref[no]{\texttt{MaxTreeNodes}}{\texttt{MaxTreeNodes}}{xref:MaxTreeNodes} then no more tree expansion is
+done and random terminals are used to ``finish off'' the expansion to
+generate valid, but presumably unfit, Perl code.
+
+You should probably use the public method \hyperref[no]{\texttt{getCode()}}{\texttt{getCode()}}{xref:getCode},
+which wraps this.
+
+\subsubsection{\texttt{\_tree\_id()}}\label{xref:_tree_id}
+\begin{flushleft}
+\textit{Arguments:} \textsc{object} \textit{mate}, \textsc{string} \textit{mynode}, \textsc{string} \textit{matenode} \\
+\textit{Return value:} \textsc{number} identities\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{Usually calls:} recursive\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Recursive tree-descending method which goes down two subtrees and
+counts the number of nodes identical between them at equivalent
+topological positions.  It stops descending whenever nodes are unequal,
+therefore it is quite crude and cannot handle insertions or deletions.
+
+\subsubsection{\texttt{initFitness()}}\label{xref:initFitness}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Deletes the two cached copies of the fitness (one in the genome, one
+in memory).
+
+\subsubsection{\texttt{eraseMemory()}}\label{xref:eraseMemory}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{\_start\_crossover()}}{\texttt{\_start\_crossover()}}{xref:_start_crossover}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Deletes all contents of the \verb:$self->{memory}: %$%
+hash, which contains the cached fitness value, but you
+may also store other things here, using the \hyperref[no]{\texttt{memory()}}{\texttt{memory()}}{xref:memory}
+method.
+
+\subsubsection{\texttt{memory()}}\label{xref:memory}
+\begin{flushleft}
+\textit{Arguments:} \textsc{hash-key} or \textsc{hash}\\
+\textit{Return value:} value\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+A get and set method for the \verb:$self->{memory}: %$%
+hash.  With a single argument, it returns the value
+stored with that key.  With an even number of arguments
+(in other words, a hash) it sets the key/value pairs.
+
+If you prefer, you can use \texttt{getMemory()} and
+\texttt{setMemory()} which are simply wrappers to this method.
+
+\subsubsection{\texttt{getCode()}}\label{xref:getCode}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \textsc{string} \textit{perl\_code}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{evalEvolvedSubs()}}{\texttt{evalEvolvedSubs()}}{xref:evalEvolvedSubs}, \hyperref[no]{\texttt{saveCode()}}{\texttt{saveCode()}}{xref:saveCode}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This is the main method for getting the Perl code from the genome.  
+
+\subsubsection{\texttt{getSize()}}\label{xref:getSize}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \textsc{number} \textit{code\_size}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::calcFitnessFor()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{GetSizeIgnoreNTypes}}{\texttt{GetSizeIgnoreNTypes}}{xref:GetSizeIgnoreNTypes}
+\end{flushleft}
+
+This is the method for calculating the size of the genome.  If the
+attribute \hyperref[no]{\texttt{GetSizeIgnoreNTypes}}{\texttt{GetSizeIgnoreNTypes}}{xref:GetSizeIgnoreNTypes} is used then
+\hyperref[no]{\texttt{\_tree\_type\_size()}}{\texttt{\_tree\_type\_size()}}{xref:_tree_type_size} is used to calculate the number of nodes
+by descent (ignoring nodes which lie below the nodetypes defined by
+\hyperref[no]{\texttt{GetSizeIgnoreNTypes}}{\texttt{GetSizeIgnoreNTypes}}{xref:GetSizeIgnoreNTypes}).  Otherwise, the number of keys in the
+genome hash is returned (which is much quicker of course).
+
+\subsubsection{\texttt{Fitness()}}\label{xref:Fitness}
+\begin{flushleft}
+\textit{Arguments:} \textsc{number} \textit{set\_value} (optional)\\
+\textit{Return value:} \textsc{number} \textit{fitness}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::tournament()}, \texttt{TournamentGP::crossoverFamily()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Without an argument routine returns the Individual's \hyperref[no]{\texttt{Fitness}}{\texttt{Fitness}}{xref:Fitness},
+first from the memory hash (see \hyperref[no]{\texttt{memory()}}{\texttt{memory()}}{xref:memory}) or if that is
+undefined, then a \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome} is called and the fitness value
+is retrieved from disk, assigned into the memory cache, and returned.
+Note that ``undefined'' value for \hyperref[no]{\texttt{Fitness}}{\texttt{Fitness}}{xref:Fitness} usually signifies
+that that the fitness has not yet been evaluated, but sometimes just
+means that the fitness has not been retrieved from disk.
+
+With an argument, a new value for \hyperref[no]{\texttt{Fitness}}{\texttt{Fitness}}{xref:Fitness} is stored in memory
+and on disk.
+
+\subsubsection{\texttt{Age()}}\label{xref:Age}
+\begin{flushleft}
+\textit{Arguments:} \textsc{number} \textit{increment} (optional)\\
+\textit{Return value:} \textsc{number}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::tournament()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Without an argument, it returns the ``age'' of an Individual,
+which usually means the number of tournaments participated.
+It is stored only in the memory cache (see \hyperref[no]{\texttt{memory()}}{\texttt{memory()}}{xref:memory},
+and \textit{not on disk}.
+
+\subsubsection{\texttt{\_random\_terminal()}}\label{xref:_random_terminal}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodetype}\\
+\textit{Return value:} \textsc{string}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}, \hyperref[no]{\texttt{\_random\_function()}}{\texttt{\_random\_function()}}{xref:_random_function}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_existing\_terminal()}}{\texttt{\_random\_existing\_terminal()}}{xref:_random_existing_terminal}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{Terminals}}{\texttt{Terminals}}{xref:Terminals}
+\end{flushleft}
+
+This routine first calls \hyperref[no]{\texttt{\_random\_existing\_terminal()}}{\texttt{\_random\_existing\_terminal()}}{xref:_random_existing_terminal} and
+returns its result if true, otherwise it returns one random element
+from the array stored in the hash pointed to by \hyperref[no]{\texttt{Terminals}}{\texttt{Terminals}}{xref:Terminals}
+using the hash-key \textit{nodetype}.
+
+\subsubsection{\texttt{\_random\_existing\_terminal()}}\label{xref:_random_existing_terminal}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodetype}, \textsc{boolean} \textit{encapsulated} (optional)\\
+\textit{Return value:} \textsc{string}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{\_random\_terminal()}}{\texttt{\_random\_terminal()}}{xref:_random_terminal}, \hyperref[no]{\texttt{\_random\_function()}}{\texttt{\_random\_function()}}{xref:_random_function}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{UseExistingTerminalsFrac}}{\texttt{UseExistingTerminalsFrac}}{xref:UseExistingTerminalsFrac}, \hyperref[no]{\texttt{UseEncapsTerminalsFrac}}{\texttt{UseEncapsTerminalsFrac}}{xref:UseEncapsTerminalsFrac}
+\end{flushleft}
+
+If you have numeric mutation switched on, perhaps you want to use
+existing refined numeric terminals during the construction of new
+subtrees.  If so, you can set \hyperref[no]{\texttt{UseExistingTerminalsFrac}}{\texttt{UseExistingTerminalsFrac}}{xref:UseExistingTerminalsFrac} to a
+fraction/probability, then this method will sometimes return a
+randomly chosen existing terminal of type \textit{nodetype} (if one
+exists) from the genome tree of this organism.  For the random
+selection, each unique terminal is counted only once (to prevent
+saturation of that terminal).
+
+If \hyperref[no]{\texttt{UseEncapsTerminalsFrac}}{\texttt{UseEncapsTerminalsFrac}}{xref:UseEncapsTerminalsFrac} is non-zero and if the optional
+argument \textit{encapsulated} is true, then with this probability,
+the method will return only terminals of the requested type which were
+generated by encapsulation (these are tagged with ``;;NUM;;'', see
+\hyperref[no]{\texttt{encapsulate\_subtree}}{\texttt{encapsulate\_subtree}}{xref:encapsulate_subtree}).  If none are found, an empty string is
+returned.
+
+\subsubsection{\texttt{\_random\_function()}}\label{xref:_random_function}
+\begin{flushleft}
+\textit{Arguments:} \textsc{string} \textit{nodetype}\\
+\textit{Return value:} \textsc{string}\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{\_random\_terminal()}}{\texttt{\_random\_terminal()}}{xref:_random_terminal}, \hyperref[no]{\texttt{\_random\_existing\_terminal()}}{\texttt{\_random\_existing\_terminal()}}{xref:_random_existing_terminal}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{Functions}}{\texttt{Functions}}{xref:Functions}, \hyperref[no]{\texttt{UseEncapsTerminalsFrac}}{\texttt{UseEncapsTerminalsFrac}}{xref:UseEncapsTerminalsFrac}
+\end{flushleft}
+
+If no set of functions of type \textit{nodetype} is defined in the
+\hyperref[no]{\texttt{Functions}}{\texttt{Functions}}{xref:Functions}, then this function passes through to
+\hyperref[no]{\texttt{\_random\_terminal()}}{\texttt{\_random\_terminal()}}{xref:_random_terminal}.  Otherwise, with probability
+\hyperref[no]{\texttt{UseEncapsTerminalsFrac}}{\texttt{UseEncapsTerminalsFrac}}{xref:UseEncapsTerminalsFrac} a random encapsulated terminal is
+attempted to be chosen through a call to
+\hyperref[no]{\texttt{\_random\_existing\_terminal()}}{\texttt{\_random\_existing\_terminal()}}{xref:_random_existing_terminal}.
+
+But the default behaviour is, of course, to return a random function
+of type \textit{nodetype} from the \hyperref[no]{\texttt{Functions}}{\texttt{Functions}}{xref:Functions} hash.
+
+
+\subsection{Attributes \& Variables}
+
+\subsubsection{\texttt{NodeMutationProb}}\label{xref:NodeMutationProb}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 1/100\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{See also:}
+\end{flushleft}
+
+The probability that each node in the genome-tree will be subjected to
+mutation (see \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}).
+
+\subsubsection{\texttt{FixedMutations}}\label{xref:FixedMutations}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{FixedMutationProb}}{\texttt{FixedMutationProb}}{xref:FixedMutationProb}
+\end{flushleft}
+
+If non-zero, then a fixed number of mutations (equal to
+\hyperref[no]{\texttt{FixedMutations}}{\texttt{FixedMutations}}{xref:FixedMutations}) will be attempted, regardless of genome size.
+This attribute overrides any setting of \hyperref[no]{\texttt{NodeMutationProb}}{\texttt{NodeMutationProb}}{xref:NodeMutationProb}.
+
+\subsubsection{\texttt{FixedMutationProb}}\label{xref:FixedMutationProb}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{FixedMutations}}{\texttt{FixedMutations}}{xref:FixedMutations}
+\end{flushleft}
+
+The probability with which \hyperref[no]{\texttt{FixedMutations}}{\texttt{FixedMutations}}{xref:FixedMutations} will be performed.
+A setting of 0.1 would mean that 10\% of the offspring from crossover
+are mutated.
+
+\subsubsection{\texttt{PointMutationFrac}}\label{xref:PointMutationFrac}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0.7\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{See also:}
+\end{flushleft}
+
+A mutation is either a point mutation or a macro mutation, this attribute
+controls how much of either.  A setting of 1 means all point mutation
+and 0 means all macro mutation.
+
+\subsubsection{\texttt{NumericMutationFrac}}\label{xref:NumericMutationFrac}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{NumericIgnoreNTypes}}{\texttt{NumericIgnoreNTypes}}{xref:NumericIgnoreNTypes}, \hyperref[no]{\texttt{NumericAllowNTypes}}{\texttt{NumericAllowNTypes}}{xref:NumericAllowNTypes}, \hyperref[no]{\texttt{NumericMutationRegex}}{\texttt{NumericMutationRegex}}{xref:NumericMutationRegex}
+\end{flushleft}
+
+With this probability, point mutations on numbers (satisfying
+\hyperref[no]{\texttt{NumericMutationRegex}}{\texttt{NumericMutationRegex}}{xref:NumericMutationRegex}) will be altered instead of replaced.
+
+
+\subsubsection{\texttt{NumericMutationRegex}}\label{xref:NumericMutationRegex}
+\begin{flushleft}
+\textit{Data type:} \textsc{regex}\\
+\textit{Default:} \verb;qr/^[+-]?\d+(?:\.\d+)?([eE][+-]?\d+)?$/;\\ %$
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{NumericMutationFrac}}{\texttt{NumericMutationFrac}}{xref:NumericMutationFrac}, \hyperref[no]{\texttt{NumericIgnoreNTypes}}{\texttt{NumericIgnoreNTypes}}{xref:NumericIgnoreNTypes}, \hyperref[no]{\texttt{NumericAllowNTypes}}{\texttt{NumericAllowNTypes}}{xref:NumericAllowNTypes}
+\end{flushleft}
+
+Numeric mutations will only be done if this pattern matches the
+terminal node contents.
+
+\subsubsection{\texttt{NumericIgnoreNTypes}}\label{xref:NumericIgnoreNTypes}
+\begin{flushleft}
+\textit{Data type:} \textsc{hash-ref}\\
+\textit{Default:} empty\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{NumericAllowNTypes()}}{\texttt{NumericAllowNTypes()}}{xref:NumericAllowNTypes}
+\end{flushleft}
+
+Define the keys in this hash as the nodetypes you don't want to be
+numerically mutated, for example:
+\begin{verbatim}
+  NumericAllowNTypes => { ANGLE => 1, INDEX => 1 },
+\end{verbatim}
+
+By default, all other terminals which match
+\hyperref[no]{\texttt{NumericMutationRegex}}{\texttt{NumericMutationRegex}}{xref:NumericMutationRegex} will be mutated, with the default change
+factor of 0.1 (see \hyperref[no]{\texttt{NumericAllowNTypes}}{\texttt{NumericAllowNTypes}}{xref:NumericAllowNTypes}).
+
+\subsubsection{\texttt{NumericAllowNTypes}}\label{xref:NumericAllowNTypes}
+\begin{flushleft}
+\textit{Data type:} \textsc{hash-ref}\\
+\textit{Default:} empty\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{NumericIgnoreNTypes()}}{\texttt{NumericIgnoreNTypes()}}{xref:NumericIgnoreNTypes}
+\end{flushleft}
+
+Define the keys in this hash as the nodetypes you want to be
+numerically mutated, for example:
+\begin{verbatim}
+  NumericAllowNTypes => { NUM => 1, CONST => 2 },
+\end{verbatim}
+
+Where the values indicate how much change occurs on mutation.
+The change is calculated as:
+
+\begin{verbatim}
+  if (rand(1)<0.5) {
+    $num *= (1 + $changefactor);
+  } else {
+    $num /= (1 + $changefactor);
+  }
+\end{verbatim}
+
+\noindent where \verb:$changefactor: %$
+is the value given in your hash.
+
+\subsubsection{\texttt{NoNeutralMutations}}\label{xref:NoNeutralMutations}
+\begin{flushleft}
+\textit{Data type:} \textsc{boolean}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{See also:}
+\end{flushleft}
+
+If true, mutations will be repeated until a visible change in the
+program code is observed.  This involves tree expansion and is
+therefore not very efficient.  Effects not properly benchmarked.
+
+\subsubsection{\texttt{PointMutationDepthBias}}\label{xref:PointMutationDepthBias}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}, \hyperref[no]{\texttt{XoverDepthBias}}{\texttt{XoverDepthBias}}{xref:XoverDepthBias}
+\end{flushleft}
+
+Depth bias for point mutation node sampling.  See
+\hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node} for details.  The default of 0 means no bias
+at all (and so terminal nodes are relatively likely).
+
+\subsubsection{\texttt{MacroMutationDepthBias}}\label{xref:MacroMutationDepthBias}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0.7\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{PointMutationDepthBias}}{\texttt{PointMutationDepthBias}}{xref:PointMutationDepthBias}, \hyperref[no]{\texttt{XoverDepthBias}}{\texttt{XoverDepthBias}}{xref:XoverDepthBias}
+\end{flushleft}
+
+Depth bias for macro mutation node sampling.  See
+\hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node} for details.
+
+\subsubsection{\texttt{MacroMutationTypes}}\label{xref:MacroMutationTypes}
+\begin{flushleft}
+\textit{Data type:} \textsc{array-ref}\\
+\textit{Default:} see below\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate}\\
+\textit{See also:}
+\end{flushleft}
+
+This array contains the names of the macro mutation operators which
+may be used.  An example of a name is \hyperref[no]{\texttt{swap\_subtrees}}{\texttt{swap\_subtrees}}{xref:swap_subtrees} (do not
+include the \texttt{()} which is used in this manual for purposes of
+clarity only).  Choice of operator is done in \hyperref[no]{\texttt{macro\_mutate()}}{\texttt{macro\_mutate()}}{xref:macro_mutate} by
+random sampling, so if you want to bias a certain operator, include
+its name in this array more than once.
+
+The default array contains a single copy each of:
+\texttt{swap\_subtrees copy\_subtree replace\_subtree insert\_internal delete\_internal}
+
+Note that \hyperref[no]{\texttt{encapsulate\_subtree}}{\texttt{encapsulate\_subtree}}{xref:encapsulate_subtree} and
+\hyperref[no]{\texttt{point\_mutate\_deep}}{\texttt{point\_mutate\_deep}}{xref:point_mutate_deep} are not included by default.
+
+\subsubsection{\texttt{EncapsulateIgnoreNTypes}}\label{xref:EncapsulateIgnoreNTypes}
+\begin{flushleft}
+\textit{Data type:} \textsc{hash-ref}\\
+\textit{Default:} empty\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{encapsulate\_subtree()}}{\texttt{encapsulate\_subtree()}}{xref:encapsulate_subtree}\\
+\textit{See also:} \hyperref[no]{\texttt{EncapsulateFracMax}}{\texttt{EncapsulateFracMax}}{xref:EncapsulateFracMax}
+\end{flushleft}
+
+Don't allow these nodetypes (the keys in the hash) to be encapsulated.
+The values are not used.  Example definition:
+\begin{verbatim}
+  EncapsulateIgnoreNTypes => { ADF => 1 },
+\end{verbatim}
+
+\subsubsection{\texttt{EncapsulateFracMax}}\label{xref:EncapsulateFracMax}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0.25\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{encapsulate\_subtree()}}{\texttt{encapsulate\_subtree()}}{xref:encapsulate_subtree}\\
+\textit{See also:}
+\end{flushleft}
+
+During node sampling in \hyperref[no]{\texttt{encapsulate\_subtree()}}{\texttt{encapsulate\_subtree()}}{xref:encapsulate_subtree}, subtrees are
+skipped if they contain more than \hyperref[no]{\texttt{EncapsulateFracMax}}{\texttt{EncapsulateFracMax}}{xref:EncapsulateFracMax} of the
+total nodes in the tree.  This is intended to prevent too much of a
+program being encapsulated.  Not benchmarked!
+
+\subsubsection{\texttt{UseEncapsTerminalsFrac}}\label{xref:UseEncapsTerminalsFrac}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_random\_function()}}{\texttt{\_random\_function()}}{xref:_random_function}\\
+\textit{See also:}
+\end{flushleft}
+
+The probability that an already encapsulated subtree will be used
+instead of a \textit{function}, during new subtree growth.  Not
+benchmarked!
+
+\subsubsection{\texttt{MutationLogFile}}\label{xref:MutationLogFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/mutation.log'\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{MutationLogProb}}{\texttt{MutationLogProb}}{xref:MutationLogProb}
+\end{flushleft}
+
+The filename for the mutation log.  Relative to the experiment
+directory.
+
+\subsubsection{\texttt{MutationLogProb}}\label{xref:MutationLogProb}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0.02\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{mutate()}}{\texttt{mutate()}}{xref:mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{MutationLogFile}}{\texttt{MutationLogFile}}{xref:MutationLogFile}
+\end{flushleft}
+
+The probability with which a log entry is written to
+\hyperref[no]{\texttt{MutationLogFile}}{\texttt{MutationLogFile}}{xref:MutationLogFile}.
+
+\subsubsection{\texttt{NodeXoverProb}}\label{xref:NodeXoverProb}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 1/50\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:} \hyperref[no]{\texttt{FixedXovers}}{\texttt{FixedXovers}}{xref:FixedXovers}, \hyperref[no]{\texttt{FixedXoverProb}}{\texttt{FixedXoverProb}}{xref:FixedXoverProb}
+\end{flushleft}
+
+The per node crossover point selection probability.
+
+\subsubsection{\texttt{FixedXovers}}\label{xref:FixedXovers}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:} \hyperref[no]{\texttt{FixedXoverProb}}{\texttt{FixedXoverProb}}{xref:FixedXoverProb}
+\end{flushleft}
+
+If non-zero, then a fixed number of crossover points (equal to
+\hyperref[no]{\texttt{FixedXovers}}{\texttt{FixedXovers}}{xref:FixedXovers}) will be attempted, regardless of genome size.
+This attribute overrides any setting of \hyperref[no]{\texttt{NodeXoverProb}}{\texttt{NodeXoverProb}}{xref:NodeXoverProb}.
+
+\subsubsection{\texttt{FixedXoverProb}}\label{xref:FixedXoverProb}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:} \hyperref[no]{\texttt{FixedXovers}}{\texttt{FixedXovers}}{xref:FixedXovers}
+\end{flushleft}
+
+The probability with which \hyperref[no]{\texttt{FixedXovers}}{\texttt{FixedXovers}}{xref:FixedXovers} crossover points will
+be attempted during reproduction (otherwise no crossovers will be
+attempted, which is the same as asexual reproduction).
+
+\subsubsection{\texttt{XoverDepthBias}}\label{xref:XoverDepthBias}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0.1\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}\\
+\textit{See also:} \hyperref[no]{\texttt{PointMutationDepthBias}}{\texttt{PointMutationDepthBias}}{xref:PointMutationDepthBias}, \hyperref[no]{\texttt{MacroMutationDepthBias}}{\texttt{MacroMutationDepthBias}}{xref:MacroMutationDepthBias}
+\end{flushleft}
+
+Depth bias for crossover point sampling.  See
+\hyperref[no]{\texttt{\_random\_node()}}{\texttt{\_random\_node()}}{xref:_random_node} for details.  If the depth wasn't biased,
+then too often crossovers would take place between ``uninteresting''
+leaf nodes and small subtrees.
+
+\subsubsection{\texttt{XoverSizeBias}}\label{xref:XoverSizeBias}
+\begin{flushleft}
+\textit{Data type:} \textsc{number} (must not be zero)\\
+\textit{Default:} 1\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:} \hyperref[no]{\texttt{XoverHomologyBias}}{\texttt{XoverHomologyBias}}{xref:XoverHomologyBias}
+\end{flushleft}
+
+This controls the strictness of size-equal crossover point selection.
+By size-equal, I mean that crossover points are selected with a bias
+towards similar sized subtrees.  Increase this (say to 2 or 4) and the
+algorithm described in \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover} spends longer looking for
+similar sized subtrees.
+
+\subsubsection{\texttt{XoverHomologyBias}}\label{xref:XoverHomologyBias}
+\begin{flushleft}
+\textit{Data type:} \textsc{number} (must not be zero)\\
+\textit{Default:} 1\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:} \hyperref[no]{\texttt{XoverSizeBias}}{\texttt{XoverSizeBias}}{xref:XoverSizeBias}
+\end{flushleft}
+
+This controls the strictness of homologous subtree crossover point
+selection.  Increase this value to 2 or 4, for example, to tell the
+algorithm described in \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover} to spend longer looking
+for crossover points with similar subtree contents.
+
+
+\subsubsection{\texttt{AsexualOnly}}\label{xref:AsexualOnly}
+\begin{flushleft}
+\textit{Data type:} \textsc{boolean}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:}
+\end{flushleft}
+
+If true, force all crossovers to use the root node, and hence make
+identical copies of both parents.  All other crossover parameters are
+ignored.
+
+\subsubsection{\texttt{XoverLogFile}}\label{xref:XoverLogFile}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} `results/crossover.log'\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:} \hyperref[no]{\texttt{XoverLogProb}}{\texttt{XoverLogProb}}{xref:XoverLogProb}
+\end{flushleft}
+
+The file (relative to the experiment directory) where some information
+about crossover point selection is logged.
+
+\subsubsection{\texttt{XoverLogProb}}\label{xref:XoverLogProb}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 1/50\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{crossover()}}{\texttt{crossover()}}{xref:crossover}\\
+\textit{See also:} \hyperref[no]{\texttt{XoverLogFile}}{\texttt{XoverLogFile}}{xref:XoverLogFile}
+\end{flushleft}
+
+The fraction of recombination events for which \hyperref[no]{\texttt{XoverLogFile}}{\texttt{XoverLogFile}}{xref:XoverLogFile}
+is written to.
+
+\subsubsection{\texttt{MaxTreeNodes}}\label{xref:MaxTreeNodes}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 1000\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_expand\_tree()}}{\texttt{\_expand\_tree()}}{xref:_expand_tree}\\
+\textit{See also:} \hyperref[no]{\texttt{MinTreeNodes}}{\texttt{MinTreeNodes}}{xref:MinTreeNodes}, \hyperref[no]{\texttt{TreeDepthMax}}{\texttt{TreeDepthMax}}{xref:TreeDepthMax}, \hyperref[no]{\texttt{TreeDepthMin}}{\texttt{TreeDepthMin}}{xref:TreeDepthMin}, \hyperref[no]{\texttt{TerminateTreeProb}}{\texttt{TerminateTreeProb}}{xref:TerminateTreeProb}
+\end{flushleft}
+
+Controls the maximum allowable tree size.  The way this works is
+counter-intuitive so pay attention...  Trees are allowed to be bigger
+than this size limit, however when the genome tree is converted into
+code, only the first \hyperref[no]{\texttt{MaxTreeNodes}}{\texttt{MaxTreeNodes}}{xref:MaxTreeNodes} are expanded properly into
+what the ``code for'', all subsequent nodes are expanded into a
+randomly picked terminal (see \hyperref[no]{\texttt{\_expand\_tree()}}{\texttt{\_expand\_tree()}}{xref:_expand_tree}).  This
+probably gives an disfunctional program and so indirectly prevents
+tree growth beyond this size.  \textit{Note that this is really just a
+safety limit, not a recommended way to control code growth.}  Don't
+forget about \hyperref[no]{\texttt{MaxTreeNodes}}{\texttt{MaxTreeNodes}}{xref:MaxTreeNodes} though, one day you will probably
+need to raise it.
+
+\subsubsection{\texttt{MinTreeNodes}}\label{xref:MinTreeNodes}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_init\_tree()}}{\texttt{\_init\_tree()}}{xref:_init_tree}\\
+\textit{See also:} \hyperref[no]{\texttt{MaxTreeNodes}}{\texttt{MaxTreeNodes}}{xref:MaxTreeNodes}, \hyperref[no]{\texttt{TreeDepthMax}}{\texttt{TreeDepthMax}}{xref:TreeDepthMax}, \hyperref[no]{\texttt{TreeDepthMin}}{\texttt{TreeDepthMin}}{xref:TreeDepthMin}, \hyperref[no]{\texttt{TerminateTreeProb}}{\texttt{TerminateTreeProb}}{xref:TerminateTreeProb}
+\end{flushleft}
+
+This attribute defines a minimum tree size (in nodes) \textit{for new
+trees only}.  If a brand new random tree (usually made during
+Population initialisation) has fewer than this number of nodes, then the
+tree is discarded and made again (and repeated until a big enough tree
+is generated).  Currently this is implemented without a check for
+infinite looping, so watch out.
+
+This attribute does not affect subtree generation.
+
+\subsubsection{\texttt{TreeDepthMax}}\label{xref:TreeDepthMax}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 20\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_init\_tree()}}{\texttt{\_init\_tree()}}{xref:_init_tree}, \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}\\
+\textit{See also:} \hyperref[no]{\texttt{TreeDepthMin}}{\texttt{TreeDepthMin}}{xref:TreeDepthMin}, \hyperref[no]{\texttt{TerminateTreeProb}}{\texttt{TerminateTreeProb}}{xref:TerminateTreeProb}, \hyperref[no]{\texttt{MaxTreeNodes}}{\texttt{MaxTreeNodes}}{xref:MaxTreeNodes}, \hyperref[no]{\texttt{MinTreeNodes}}{\texttt{MinTreeNodes}}{xref:MinTreeNodes}, \hyperref[no]{\texttt{NewSubtreeDepthMax}}{\texttt{NewSubtreeDepthMax}}{xref:NewSubtreeDepthMax}
+\end{flushleft}
+
+A fixed limit on tree depth for brand new trees only.  When a growing
+branch of a tree reaches this limit, only terminals are added (like in
+Koza's and other GP implementations).  Note that this is different to
+the implementation of \hyperref[no]{\texttt{MaxTreeNodes}}{\texttt{MaxTreeNodes}}{xref:MaxTreeNodes}.
+
+The default is just a safety limit because it is assumed that you are
+using a ``naturally terminating grammar''.
+
+\subsubsection{\texttt{TerminateTreeProb}}\label{xref:TerminateTreeProb}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}\\
+\textit{See also:} \hyperref[no]{\texttt{TreeDepthMin}}{\texttt{TreeDepthMin}}{xref:TreeDepthMin}
+\end{flushleft}
+
+You may force the choice of terminals during new tree and subtree
+generation by setting this probability.  It only has an effect at tree
+depths below \hyperref[no]{\texttt{TreeDepthMin}}{\texttt{TreeDepthMin}}{xref:TreeDepthMin}.  Note the default is zero.
+
+\subsubsection{\texttt{TreeDepthMin}}\label{xref:TreeDepthMin}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 1\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree}\\
+\textit{See also:} \hyperref[no]{\texttt{TerminateTreeProb}}{\texttt{TerminateTreeProb}}{xref:TerminateTreeProb}
+\end{flushleft}
+
+The minimum depth before tree growth is probabilistically terminated
+with \hyperref[no]{\texttt{TerminateTreeProb}}{\texttt{TerminateTreeProb}}{xref:TerminateTreeProb}.
+
+
+\subsubsection{\texttt{NewSubtreeDepthMean}}\label{xref:NewSubtreeDepthMean}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 20\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} macro mutation operators\\
+\textit{See also:} \hyperref[no]{\texttt{NewSubtreeDepthMax}}{\texttt{NewSubtreeDepthMax}}{xref:NewSubtreeDepthMax}
+\end{flushleft}
+
+Many of the macro mutation operators need to make new subtrees.  They
+call \hyperref[no]{\texttt{\_grow\_tree()}}{\texttt{\_grow\_tree()}}{xref:_grow_tree} with a specific tree depth maximum which
+is generated from a capped Poisson distribution with the mean
+parameter \hyperref[no]{\texttt{NewSubtreeDepthMean}}{\texttt{NewSubtreeDepthMean}}{xref:NewSubtreeDepthMean}, and cap
+\hyperref[no]{\texttt{NewSubtreeDepthMax}}{\texttt{NewSubtreeDepthMax}}{xref:NewSubtreeDepthMax}.  The default setting is quite high and
+assumes that you have a ``naturally terminating grammar''.
+
+\subsubsection{\texttt{NewSubtreeDepthMax}}\label{xref:NewSubtreeDepthMax}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 20\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} macro mutation operators\\
+\textit{See also:} \hyperref[no]{\texttt{NewSubtreeDepthMean}}{\texttt{NewSubtreeDepthMean}}{xref:NewSubtreeDepthMean}
+\end{flushleft}
+
+A hard upper limit on the size of new subtrees (see
+\hyperref[no]{\texttt{NewSubtreeDepthMean}}{\texttt{NewSubtreeDepthMean}}{xref:NewSubtreeDepthMean}).
+
+\subsubsection{\texttt{UseExistingTerminalsFrac}}\label{xref:UseExistingTerminalsFrac}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 0\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_random\_existing\_terminal()}}{\texttt{\_random\_existing\_terminal()}}{xref:_random_existing_terminal}\\
+\textit{See also:} \hyperref[no]{\texttt{NumericMutationFrac}}{\texttt{NumericMutationFrac}}{xref:NumericMutationFrac}, \hyperref[no]{\texttt{UseEncapsTerminalsFrac}}{\texttt{UseEncapsTerminalsFrac}}{xref:UseEncapsTerminalsFrac}
+\end{flushleft}
+
+The fraction or probability with which existing terminals (already in
+the genome tree) are used instead of the usual pool of terminals held
+in \hyperref[no]{\texttt{Terminals}}{\texttt{Terminals}}{xref:Terminals}.  Usually you will want to combine this with
+numeric mutation.  See also \hyperref[no]{\texttt{point\_mutate()}}{\texttt{point\_mutate()}}{xref:point_mutate}.
+
+\subsubsection{\texttt{GetSizeIgnoreNTypes}}\label{xref:GetSizeIgnoreNTypes}
+\begin{flushleft}
+\textit{Data type:} \textsc{hash-ref}\\
+\textit{Default:} empty\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{getSize()}}{\texttt{getSize()}}{xref:getSize}\\
+\textit{See also:}
+\end{flushleft}
+
+If you are using parsimony pressure in your fitness function, you
+might want \hyperref[no]{\texttt{getSize()}}{\texttt{getSize()}}{xref:getSize} to ignore the trees below certain
+nodetypes.  In this case you can specify these nodetypes in this hash.
+
+\subsubsection{\texttt{DBFileStem}}\label{xref:DBFileStem}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} none, required attribute\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{tieGenome()}}{\texttt{tieGenome()}}{xref:tieGenome}\\
+\textit{See also:} \texttt{Population::findNewDBFileStem()}
+\end{flushleft}
+
+This is the file stem for the DBM file where the genome tree is
+stored.  It is a required attribute.  See the program
+perlgp-rand-prog.pl to see how you can make a random program using
+a temporary \hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem}.
+
+\subsubsection{\texttt{ExperimentId}}\label{xref:ExperimentId}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} none, required attribute\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} perlgp-run.pl\\
+\textit{See also:}
+\end{flushleft}
+
+This is the \textit{name} of the current experiment directory (not the
+full path).
+
+\subsubsection{\texttt{Population}}\label{Individual::Population}
+\begin{flushleft}
+\textit{Data type:} \textsc{object}\\
+\textit{Default:} none, required attribute\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} not really used!\\
+\textit{See also:} perlgp-rand-prog.pl
+\end{flushleft}
+
+Each Individual knows to which Population it belongs.  Currently this
+is not actually used anywhere.  Since it is compulsory, you have to
+proivide a dummy value in applications such as perlgp-rand-prog.pl,
+sorry about that - I guess this will change.
+
+
+\subsubsection{\texttt{Functions}}\label{xref:Functions}
+\begin{flushleft}
+\textit{Data type:} \textsc{hash-ref}\\
+\textit{Default:} \verb;\%Grammar::F;\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_random\_function()}}{\texttt{\_random\_function()}}{xref:_random_function}\\
+\textit{See also:} \hyperref[no]{\texttt{Terminals}}{\texttt{Terminals}}{xref:Terminals}
+\end{flushleft}
+
+This is where the non-terminal grammar definitions are stored.  In the
+hash, keys are nodetypes and the values are anonymous arrays
+containing different function options.  More details of the format
+used can be found in Section~\ref{Grammar}.  Usually this hash is
+shared between all Individual objects (otherwise memory usage would be
+heavy), hence the default is a reference to the hash
+\verb;%Grammar::F;.
+
+You could customise the Individual class to dynamically alter
+\hyperref[no]{\texttt{Functions}}{\texttt{Functions}}{xref:Functions} and \hyperref[no]{\texttt{Terminals}}{\texttt{Terminals}}{xref:Terminals} if you wanted to.
+
+\subsubsection{\texttt{Terminals}}\label{xref:Terminals}
+\begin{flushleft}
+\textit{Data type:} \textsc{hash-ref}\\
+\textit{Default:} \verb;\%Grammar::T;\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{\_random\_terminal()}}{\texttt{\_random\_terminal()}}{xref:_random_terminal}\\
+\textit{See also:} \hyperref[no]{\texttt{Functions}}{\texttt{Functions}}{xref:Functions}
+\end{flushleft}
+
+The terminal node options are stored here, see the entry for
+\hyperref[no]{\texttt{Functions}}{\texttt{Functions}}{xref:Functions}, and also Section~\ref{Grammar}.
+
+
+\subsubsection{\texttt{SleepAfterSubEvalError}}\label{xref:SleepAfterSubEvalError}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 15\\
+\textit{Defined in:} GeneticProgram.pm\\
+\textit{Mainly used in:} \texttt{evalEvolvedSubs()}\\
+\textit{See also:} 
+\end{flushleft}
+
+If you have syntax errors in your evolved subroutines it's
+nice to be able to read the error messages, and not have
+them scrolling off the screen like crazy.  Hence a sleep
+is introduced for 
+\texttt{SleepAfterSubEvalError} seconds, but you can
+change this if you know what you are doing.  (For example,
+if you are using unprotected division.)
+
+
+\section{Class: Population}\label{Population}
+\subsection{Methods}
+
+\subsubsection{\texttt{new()}}\label{Population::new}
+\begin{flushleft}
+\textit{Arguments:} \hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId} \verb:=>: \textsc{string}, \textsc{attribute-hash} (optional)\\
+\textit{Return value:} \textsc{object}\\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly called by:} perlgp-run.pl\\
+\textit{Usually calls:} \texttt{\_init()}\\
+\textit{Relevant attributes:} all
+\end{flushleft}
+
+The constructor for the Population class.  You may customise the
+object by setting attributes as arguments to the constructor
+or edit \texttt{\_init()} in Population.pm.
+
+\subsubsection{\texttt{\_init()}}\label{Population::_init}
+\begin{flushleft}
+\textit{Arguments:} \textsc{attribute-hash}\\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+A standard cascading \texttt{\_init()} routine, which sets attributes.
+It also creates \hyperref[no]{\texttt{PopulationDir}}{\texttt{PopulationDir}}{xref:PopulationDir} if it doesn't exist.  If you
+want to change the attributes, edit the hash \texttt{\%defaults} in
+\texttt{\_init()} in Population.pm.
+
+\subsubsection{\texttt{addIndividual()}}\label{xref:addIndividual}
+\begin{flushleft}
+\textit{Arguments:} \textsc{object} \textit{individual}\\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Adds \textit{individual} to \hyperref[no]{\texttt{Individuals}}{\texttt{Individuals}}{xref:Individuals}.
+
+\subsubsection{\texttt{findNewDBFileStem()}}\label{xref:findNewDBFileStem}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} perlgp-run.pl\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Searches the scratch directory (PERLGP\_SCRATCH) for an unused filename
+of the format ``Individual-\%06d'' where the last bit is a serial
+number.  For speed, instead of checking for the existence of files, a
+hash table in memory (\texttt{\%usedfilestems}) is used.
+
+
+\subsubsection{\texttt{repopulate()}}\label{xref:repopulate}
+\begin{flushleft}
+\textit{Arguments:} \texttt{RandomFraction} \verb:=>: \textsc{number} (optional)\\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} perlgp-run.pl\\
+\textit{Usually calls:} \hyperref[no]{\texttt{addIndividual()}}{\texttt{addIndividual()}}{xref:addIndividual}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{PopulationDir}}{\texttt{PopulationDir}}{xref:PopulationDir}
+\end{flushleft}
+
+This is called on a newly created Population object in perlgp-run.pl
+in order to load up any pre-existing Individuals.  First, it looks in
+\hyperref[no]{\texttt{PopulationDir}}{\texttt{PopulationDir}}{xref:PopulationDir} for DBM files.  If there are no files and if a
+gzipped tar file backup exists (see \hyperref[no]{\texttt{backup()}}{\texttt{backup()}}{xref:backup} for this
+Population, then the tar file is unpacked into \hyperref[no]{\texttt{PopulationDir}}{\texttt{PopulationDir}}{xref:PopulationDir}.
+In other words, the Population directory in PERLGP\_SCRATCH is
+recovered from the backup.
+
+Then all the unique filestems in \hyperref[no]{\texttt{PopulationDir}}{\texttt{PopulationDir}}{xref:PopulationDir} are used to
+create new Individual objects which are passed to
+\hyperref[no]{\texttt{addIndividual()}}{\texttt{addIndividual()}}{xref:addIndividual}.  In other words, new Individuals are made,
+each one tied to a DBM file in \hyperref[no]{\texttt{PopulationDir}}{\texttt{PopulationDir}}{xref:PopulationDir}.
+
+\subsubsection{\texttt{backup()}}\label{xref:backup}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::run()}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId}
+\end{flushleft}
+
+This routine simply tars up the entire \hyperref[no]{\texttt{PopulationDir}}{\texttt{PopulationDir}}{xref:PopulationDir} and
+saves it in the directory PERLGP\_POPS with a name based on
+\hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId}.  To recover a population, see
+\hyperref[no]{\texttt{repopulate()}}{\texttt{repopulate()}}{xref:repopulate}.
+
+\subsubsection{\texttt{emigrate()}}\label{xref:emigrate}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::run()}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{selectCohort()}}{\texttt{selectCohort()}}{xref:selectCohort}, \texttt{Individual::save()}\\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{MigrationSize}}{\texttt{MigrationSize}}{xref:MigrationSize}
+\end{flushleft}
+
+This method randomly selects \hyperref[no]{\texttt{MigrationSize}}{\texttt{MigrationSize}}{xref:MigrationSize} Individuals and
+saves them in a temporary directory, which is then tarred up into a
+file in PERLGP\_POPS (the name comes from the method
+\hyperref[no]{\texttt{export\_tar\_file()}}{\texttt{export\_tar\_file()}}{xref:export_tar_file}).
+
+
+\subsubsection{\texttt{export\_tar\_file()}}\label{xref:export_tar_file}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \textsc{string}\\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{emigrate()}}{\texttt{emigrate()}}{xref:emigrate}, \hyperref[no]{\texttt{immigrate()}}{\texttt{immigrate()}}{xref:immigrate}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} \hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId}
+\end{flushleft}
+
+All this does is return the following string:
+\begin{verbatim}
+  sprintf "%s/%s.export.tar.gz", $ENV{PERLGP_POPS}, $self->ExperimentId();
+\end{verbatim}
+
+
+(Sometimes Perl is easier to understand than English.)
+
+
+\subsubsection{\texttt{immigrate()}}\label{xref:immigrate}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::run()}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{randomIndividual()}}{\texttt{randomIndividual()}}{xref:randomIndividual}, \texttt{Individual::load()}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+First, some explanation of a major assumption we make about migrating
+populations: that is that mutually migrating populations are assumed
+to have the same base \hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId} followed by a minus sign
+and an integer, i.e. \verb:pi-01 pi-02 pi-03 pi-04:.  These
+directories are made automatically by the wrapper script
+perlgp-mrun.pl.
+
+Potential immigrant population samples are gathered by a glob in
+PERLGP\_POPS for \texttt{ExperimentId-*.export.tar.gz}.  Then one of
+these is selected at random (but not a sample exported from this
+Population, of course), and is unpacked into a temporary directory.
+This temporary directory contains DBM files, and these are loaded up
+into randomly selected Individuals from this Population using
+\texttt{Individual::load()}.  Each of the affected Individuals now has
+a new genome so its fitness is reset with a call to
+\hyperref[no]{\texttt{initFitness()}}{\texttt{initFitness()}}{xref:initFitness} (because the previous fitness may have been
+calculated on different training examples in the other Population).
+
+\subsubsection{\texttt{initFitnesses()}}\label{xref:initFitnesses}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+A routine to call \hyperref[no]{\texttt{initFitness()}}{\texttt{initFitness()}}{xref:initFitness} on each Individual in the
+Population.
+
+\subsubsection{\texttt{countIndividuals()}}\label{xref:countIndividuals}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \textsc{number}\\
+\textit{Defined in:} BasePopulation.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Returns the number of Individuals in the Population,
+not to be confused with \hyperref[no]{\texttt{PopulationSize}}{\texttt{PopulationSize}}{xref:PopulationSize}.
+
+\subsubsection{\texttt{randomIndividual()}}\label{xref:randomIndividual}
+\begin{flushleft}
+\textit{Arguments:} \\
+\textit{Return value:} \textsc{object}\\
+\textit{Defined in:} BasePopulation.pm\\
+\textit{Mainly called by:} \hyperref[no]{\texttt{selectCohort()}}{\texttt{selectCohort()}}{xref:selectCohort}\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Returns one randomly selected Individual from \hyperref[no]{\texttt{Individuals}}{\texttt{Individuals}}{xref:Individuals}.
+
+\subsubsection{\texttt{selectCohort()}}\label{xref:selectCohort}
+\begin{flushleft}
+\textit{Arguments:} \textsc{number} \textit{size}\\
+\textit{Return value:} \textsc{array}\\
+\textit{Defined in:} BasePopulation.pm\\
+\textit{Mainly called by:} \texttt{TournamentGP::tournament()}, \hyperref[no]{\texttt{emigrate()}}{\texttt{emigrate()}}{xref:emigrate}\\
+\textit{Usually calls:} \hyperref[no]{\texttt{randomIndividual()}}{\texttt{randomIndividual()}}{xref:randomIndividual}\\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+Returns \textit{size} different, randomly selected Individuals from
+the Population.
+
+
+\subsection{Attributes \& Variables}
+
+\subsubsection{\texttt{Individuals}}\label{xref:Individuals}
+\begin{flushleft}
+\textit{Data type:} \textsc{array-ref}\\
+\textit{Default:} empty\\
+\textit{Defined in:} BasePopulation.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{addIndividual()}}{\texttt{addIndividual()}}{xref:addIndividual}, \hyperref[no]{\texttt{countIndividuals()}}{\texttt{countIndividuals()}}{xref:countIndividuals}, \hyperref[no]{\texttt{randomIndividual()}}{\texttt{randomIndividual()}}{xref:randomIndividual}\\
+\textit{See also:} \hyperref[no]{\texttt{PopulationSize}}{\texttt{PopulationSize}}{xref:PopulationSize}
+\end{flushleft}
+
+The array where the Individuals in the Population are stored.
+
+\subsubsection{\texttt{PopulationSize}}\label{xref:PopulationSize}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 2000\\
+\textit{Defined in:} BasePopulation.pm\\
+\textit{Mainly used in:} perlgp-run.pl\\
+\textit{See also:}
+\end{flushleft}
+
+This is the maxium allowed size of the Population, if you use
+perlgp-run.pl to start a run.  The Population class does not control
+the number of Individuals itself.
+
+
+\subsubsection{\texttt{MigrationSize}}\label{xref:MigrationSize}
+\begin{flushleft}
+\textit{Data type:} \textsc{number}\\
+\textit{Default:} 50\\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{emigrate()}}{\texttt{emigrate()}}{xref:emigrate}\\
+\textit{See also:}
+\end{flushleft}
+
+If migration is enabled (in the Algorithm class with
+\hyperref[no]{\texttt{EmigrateInterval}}{\texttt{EmigrateInterval}}{xref:EmigrateInterval} and \hyperref[no]{\texttt{ImmigrateInterval}}{\texttt{ImmigrateInterval}}{xref:ImmigrateInterval}), then this
+parameter determines how many Individuals move from one population to
+another at a time.
+
+\subsubsection{\texttt{PopulationDir}}\label{xref:PopulationDir}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} see below\\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly used in:} \hyperref[no]{\texttt{repopulate()}}{\texttt{repopulate()}}{xref:repopulate}\\
+\textit{See also:} \hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId}
+\end{flushleft}
+
+The directory where all the per-Individual DBM files are stored.
+The default is PERLGP\_SCRATCH/\hyperref[no]{\texttt{ExperimentId}}{\texttt{ExperimentId}}{xref:ExperimentId}.
+
+
+\subsubsection{\texttt{ExperimentId}}\label{Individual::ExperimentId}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} \\
+\textit{Defined in:} GPPopulation.pm\\
+\textit{Mainly used in:} \texttt{}\\
+\textit{See also:} \texttt{}
+\end{flushleft}
+
+The same as the attribute in Algorithm with the same name.
+
+\section{Universal Base Class: PerlGPObject}\label{PerlGPObject}
+
+\subsection{Methods}
+
+\subsubsection{\texttt{new()}}\label{PerlGPObject::new}
+\begin{flushleft}
+\textit{Arguments:} none\\
+\textit{Return value:} void\\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+This is actually where the constructor for all PerlGP classes is
+defined, but it has been explained in more detail above.
+
+\subsubsection{\texttt{AUTOLOAD()} (get and set attributes)}\label{xref:getset}
+\begin{flushleft}
+\textit{Arguments:} Attribute name or value \\
+\textit{Return value:} Attribute value or \texttt{\$self}\\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly called by:} \\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:} all
+\end{flushleft}
+
+Thanks to the magic of Perl's AUTOLOAD mechanism, we can use all valid
+attribute names as methods to get and set their values.  So the usage
+is simply:
+
+\begin{verbatim}
+  # getting
+  my $prob = $individual->NodeMutationProb();
+  my $size = $population->PopulationSize();
+
+  # setting
+  $algorithm->TournamentsSinceBest(0);
+  $individual->Terminals({ NUM=>[0 .. 9], CHAR=>['a' .. 'z'] });
+\end{verbatim}
+
+However, sometimes it's not convenient to use this notation,
+particularly during string interpolation or with +=, so you
+will often see direct access to the attributes in the object
+hash.
+
+\begin{verbatim}
+  $algorithm->{Tournament}++;
+  print "my file stem is $self->{DBFileStem}\n";
+\end{verbatim}
+
+In order for this to mechanism to work, an object needs to know which
+attributes it has.  It looks to see if the requested method name is a
+key in the object's hash table.  The simplest way to define these is
+in the \texttt{\%defaults} hash in the top level class definition file
+(e.g. Algorithm.pm).  You can also ``reserve'' an attribute for later
+use with \texttt{optionalParams()}, which is equivalent to
+initialising the attribute with an undefined value.
+
+Because the set routine returns \texttt{\$self}, you can chain ``set''
+calls like this:
+
+\begin{verbatim}
+  $object->NodeMutationProb(0.01)->NodeXoverProb(0.02);
+\end{verbatim} %$
+
+
+\subsubsection{optionalParams()}
+\begin{flushleft}
+\textit{Arguments:} \textsc{array} \textit{attribute\_names} \\
+\textit{Return value:} \\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly called by:} \texttt{\_init()} methods\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+See the discussion for \texttt{AUTOLOAD}.  Add a call to this method
+in the \texttt{\_init()} routine (after the \texttt{SUPER::\_init()}
+call - see GPPopulation.pm for an example) to reserve an attribute
+name so that the AUTOLOAD get/set routines will recognise it.
+
+\subsubsection{compulsoryParams()}
+\begin{flushleft}
+\textit{Arguments:} \textsc{array} \textit{attribute\_names} \\
+\textit{Return value:} \\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly called by:} \texttt{\_init()} methods\\
+\textit{Usually calls:} \\
+\textit{Relevant attributes:}
+\end{flushleft}
+
+If you want to make sure that the user provides values for certain
+attributes in the constructor or top level \texttt{\_init()} routine,
+then you can use this routine.  See \texttt{GeneticProgram::\_init()}
+for an example.
+
+
+\subsection{Attributes \& Variables}
+
+\subsubsection{\texttt{Class}}\label{xref:Class}
+\begin{flushleft}
+\textit{Data type:} \textsc{string}\\
+\textit{Default:} \\
+\textit{Defined in:} PerlGPObject.pm\\
+\textit{Mainly used in:} nowhere, actually\\
+\textit{See also:}
+\end{flushleft}
+
+All objects store their own type in the \hyperref[no]{\texttt{Class}}{\texttt{Class}}{xref:Class} attribute, but
+this isn't used anywhere.  Could be useful for debugging, but then
+you could just print out the object reference.
+
+\section{Grammar definition}\label{Grammar}
+
+You control the space explored by your evolving programs by specifying
+a grammar for their construction.  This is done in Grammar.pm in a
+fairly standard way, except that the production rules are split into
+functions and terminals.  The following sections explain some of the
+concepts and how the grammar is converted into a real Perl
+program. But first I explain some strange Perl syntax that you may not
+have seen before:
+
+
+\begin{verbatim}
+$F{ROOT} = [ <<'___',
+package Individual;
+
+sub evaluateOutput {
+  my ($self, $data) = @_;
+  my ($x, $y, $z, @output);
+  foreach $input (@$data) {
+    $x = $input->{x};
+    # begin evolved bit
+
+    $y = {NUM};
+
+    # end evolved bit
+    push @output, { 'y'=> $y };
+  }
+  return \@output;
+}
+___
+];
+\end{verbatim}
+
+
+The right hand side of this assignment is an anonymous array (or
+reference to an array) containing a single string element.  The
+contents of that string are everything on the lines \textit{between}
+the \verb:<<'___': and the following \verb:___:.  This is known as
+\textit{here-text}, and is often used in shell scripts.  In Perl there
+are different flavours of here-text, the one used here is
+single-quoted here-text, which means things that look like variables
+(like \texttt{\$x}) are not interpolated.
+
+Why not just put single quotes round this string?  Well there are some
+single quotes in the string and we like those and don't want to mess
+around with backslashes.  OK, so why not use q() or q//?  Then we have
+to make sure that the delimiter is not in the string anywhere, which
+is a pain.  Here-text does just fine thanks, and tends not to mess up
+emacs colouring too!
+
+Note that the following, with the square brackets closed before the
+here-text, is also correct:
+
+\begin{verbatim}
+$F{FOO} = [ <<'___' ];
+foreach $foo (@foo) {
+  $foo->{FUNC}();
+}
+___
+\end{verbatim}%$
+
+
+Now read on for a short explanation of what's going on with hashes and
+grammar definition (modified from my EuroGP2003 paper/poster).
+
+\subsection{Tree-as-Hash-Table Genotype Representation}
+
+Hash tables, also known as associative arrays, can be hijacked to
+encode string-based tree structures as explained in
+the code snippet below.  The keys in the genome hash-tree follow
+the syntax: \texttt{nodeTYPExx}, where \texttt{TYPE} is replaced by an
+all-capitals string describing the type of the node (see
+Section~\ref{sect:grammar}), and \texttt{xx} is a unique identifier (for
+there may be many nodes of the same type).
+
+% This syntax should be obscure
+%enough to avoid accidental replacement of other text contained within
+%curly braces (i.e. other hash keys in the evolved code).
+
+
+\begin{verbatim}
+  $tree{nodeS0} = 'One day in {nodeS1}.';
+  $tree{nodeS1} = '{nodeS2} {nodeS3}';
+  $tree{nodeS2} = 'late';
+  $tree{nodeS3} = 'August';
+  $string = $tree{nodeS0};
+  do { print "$string\n" } while ($string =~ s/{(\w+)}/$tree{$1}/);
+
+  # outputs the following:
+    One day in {nodeS1}.
+    One day in {nodeS2} {nodeS3}.
+    One day in late {nodeS3}.
+    One day in late August.
+\end{verbatim}
+\begin{center}\small
+Tree-as-hash-table explanation.  In Perl,
+the syntax \texttt{\$one\{two\} = 'three'}
+means that in a hash table named `one', the value `three' is stored
+for the key `two'.  The iterated search-and-replace
+(\texttt{s/patt/repl/})
+looks for hash keys contained within curly
+braces and replaces them with the contents of the hash. 
+\end{center}
+
+
+\subsection{\label{sect:grammar}Grammar Specification}
+
+PerlGP is a strongly typed system.  In fact, all evolved code must be
+syntactically correct to be awarded fitness.  When random individuals
+or subtrees are generated, PerlGP follows a grammar (defined by the
+user).  The format of this grammar is analogous to the tree-as-hash
+encoding described above, and is explained in the code below:
+
+
+\begin{verbatim}
+  $F{ROOT} = [ '{STATEMENT}' ];
+  $T{ROOT} = [ '# nothing' ];
+
+  $F{STATEMENT} = [ 'print "{STRING}!\n";',
+                    '$s = "{WORD}";',
+                    '{STATEMENT}
+  {STATEMENT}' ];
+
+  $T{STATEMENT} = [ '# just a comment',
+                    'chomp($s);',];
+
+  $F{STRING} = [ '{STRING}, {STRING}',
+                 '{WORD}' ];
+
+  $T{STRING} =
+    $T{WORD} = [ 'donuts', 'mmm', '$s' ];
+\end{verbatim}
+
+\begin{center} \small
+Grammar specification as a pair of hashes,
+\texttt{\%F} for functions and \texttt{\%T} for terminals.  The keys
+in the hashes are the user-defined node types (i.e. data types).  Node
+types must be in capital letters only.  The values are anonymous
+arrays containing the possible expansions for that type.  When another
+function or terminal is needed, it is signalled by a node type in
+curly braces.  The \texttt{ROOT} node type must always be defined.
+Function definitions are optional (in this example there is no
+function of type \texttt{WORD}) but terminals must be defined for every type.
+\end{center}
+
+
+\subsection{Random Initialisation of Programs}
+
+A random tree is generated simply by starting with a new node of type
+\texttt{ROOT}, picking a random element from the array stored in
+\texttt{\$F\{ROOT\}}, creating new nodes wherever \texttt{\{TYPE\}} is seen.
+This is illustrated below:
+
+
+\begin{verbatim}
+ 1  $genome{nodeROOT0}      = '{nodeSTATEMENT0}';
+
+ 2  $genome{nodeSTATEMENT0} = '{nodeSTATEMENT1} {nodeSTATEMENT2}';
+
+ 3  $genome{nodeSTATEMENT1} = '$s = "{nodeWORD0}";';
+
+ 4  $genome{nodeSTATEMENT2} = 'print "{nodeSTRING0}!\n";';
+
+ 5  $genome{nodeSTRING0}    = '{nodeSTRING1}, {nodeSTRING2}';
+
+ 6  $genome{nodeSTRING1}    = '{nodeWORD1}';
+
+ 7  $genome{nodeSTRING2}    = '{nodeWORD2}';
+
+ 8  $genome{nodeWORD0}      = 'donuts';
+
+ 9  $genome{nodeWORD1}      = 'mmm';
+
+10  $genome{nodeWORD2}      = '$s';
+\end{verbatim}
+\begin{center}\small
+To make a new tree: start with a \texttt{ROOT}
+node, assign a new genome key \texttt{nodeROOT0} and pick one of the
+available \texttt{ROOT} type functions from the grammar (see
+Section~\ref{sect:grammar}).  In this case there is only one choice
+(line 1).  The contents of the new node require a new \texttt{STATEMENT} type
+node to be created, and a random function of that type is chosen (line
+2).  Now there are two child nodes to be expanded (lines 3 and 4).
+The process continues recursively along all branches and when a
+function can not be found, a terminal node is used instead.  
+\end{center}
+
+
+Here are a few examples of random code generated from the actual
+grammar defined in Section~\ref{sect:grammar}, generated with the
+utility program perlgp-rand-prog.pl, each separated by a blank line.
+
+\begin{verbatim}
+print "$s, donuts, mmm, mmm, $s!\n";
+print "$s, mmm, $s!\n";
+print "$s!\n";
+
+$s = "$s";
+
+print "mmm, mmm!\n";
+$s = "$s";
+print "mmm, $s, $s, mmm, mmm, $s!\n";
+print "donuts!\n";
+$s = "mmm";
+print "mmm, donuts, mmm, mmm, mmm, $s, mmm, donuts, $s, mmm, $s, $s, donuts,
+ donuts, donuts, donuts, mmm, $s, donuts, donuts, donuts, donuts, mmm!\n";
+print "$s, $s!\n";
+
+$s = "donuts";
+$s = "donuts";
+$s = "mmm";
+$s = "$s";
+print "donuts!\n";
+
+$s = "donuts";
+\end{verbatim}
+
+Tree termination and size control can be achieved in three ways.  I
+prefer to construct the Grammar with biased frequencies of branching
+and non-branching functions so that trees terminate naturally.
+
+  Whereas the following grammar definition tends to produce
+very deep trees:
+
+\texttt{\$F\{STRING\} = ['\{STRING\}, \{STRING\}','\{WORD\}'];},
+
+\noindent this modification produces more reasonably sized trees:
+
+\texttt{\$F\{STRING\} = ['\{STRING\}, \{STRING\}','\{WORD\}','\{WORD\}','\{WORD\}'];}
+
+\noindent because the \texttt{WORD} type is non-branching and only terminals
+are defined for it.
+
+Alternatively or additionally, maximum and minimum tree sizes
+(number of nodes) can be imposed, along with an early termination
+probability and a maximum tree depth limit.
+
+
+\section{Utility Scripts}\label{Utilities}
+
+\subsection{perlgp-run.pl}
+
+This is the main program for running a PerlGP experiment.  It expects
+to be run from the ``experiment directory''.  The only option
+available is -loop which causes the program to restart after crashing
+(with a 60 second sleep).  See also the Algorithm attribute
+\hyperref[no]{\texttt{ForkForEval}}{\texttt{ForkForEval}}{xref:ForkForEval} if you are having problems with crashing.
+
+\subsection{plot-tlog.pl}
+
+This is the script for plotting the tournament log file (explained in
+Table~\ref{tab:tournlog} in Section~\ref{xref:tournament}).  It uses
+gnuplot, so you will need to install this if you don't have it and
+want to use this (simple to adapt) script.
+
+\begin{verbatim}
+  usage: plot-tlog.pl
+\end{verbatim}
+
+The main options are:
+\begin{description}
+\item[-refresh S] - sleep for S seconds and then replot
+\item[-geometry GEOM] - X11 geometry specification for window (e.g. -geometry 400x300-0+0)
+\item[-timebased] - show the number of hours elapsed since the start of the run on the x-axis
+\item[-logs AXIS] - use a logarithmic scale on AXIS (x, y, x2, y2)
+\item[-yrange 'RANGE'] - fix the y-axis range, (-yrange '[0:100]')
+\item[-xrange, -y2range] - see -yrange, the program size and complexity values are plotted against the y2 axis
+\end{description}
+
+\subsection{perlgp-wipe-expt.pl}
+
+When run from inside an experiment directory, it removes the results
+directory and also any on-disk populations belonging to this run in
+PERLGP\_SCRATCH and PERLGP\_POPS.
+
+When run from outside an experiment directory, you can give multiple
+experiment directory paths on the command line and it will go into
+each and clean them as above.
+
+\subsection{perlgp-rand-prog.pl}
+
+Makes and prints to STDOUT a random program from your grammar
+definition.  (For the interested: it does this by generating a new
+Individual object with a temporary \hyperref[no]{\texttt{DBFileStem}}{\texttt{DBFileStem}}{xref:DBFileStem}.)
+
+Extremely useful when defining a new grammar.  It is recommended to
+set \hyperref[no]{\texttt{MinTreeNodes}}{\texttt{MinTreeNodes}}{xref:MinTreeNodes} to zero while experimenting with new
+grammars (otherwise you don't get a proper sense of how the trees are
+naturally terminating).
+
+\subsection{perlgp-sample-pop.pl}
+
+\begin{verbatim}
+  usage: perlgp-sample-pop.pl [ 0.1 ] | less
+  (runs inside experiment directory)
+\end{verbatim}
+
+Samples a random fraction (default 0.1, but you can give a different
+value on the command line) of the Population and prints the Perl code
+to STDOUT.  It can be useful to pipe the output through grep and sort
+to give you an idea of what are the common ``genes'' (lines of code)
+in your gene pool.
+
+\subsection{perlgp-show-prog.pl}
+
+\begin{verbatim}
+  usage: perlgp-show-prog.pl db_file_stem
+
+  example: perlgp-show-prog.pl results/keptbest/Tournament-0000139
+\end{verbatim}
+
+Loads up an Individual from a DBM file, which is not human readable,
+and expands the Perl code and prints it to STDOUT.
+
+\subsection{perlgp-mrun.pl}
+
+A wrapper script for running multiple copies of experiments (in copied
+directories).  You should make sure that there are no large files in
+the experiment directories (use links for large data files) if you
+cannot afford the disk space.
+
+On a single processor, this script will run jobs in serial.  If you
+have a cluster, or a multi-processor machine, you can use the -queue
+option but \textit{you must modify the script to work with your local
+queueing system.}
+
+You run the script from the parent directory of the experiment directory:
+
+\begin{verbatim}
+  usage: perlgp-mrun.pl -num 20 -hours 4 expt_dir_name
+\end{verbatim}
+
+The main options are:
+\begin{description}
+\item[-number X] - makes X copies of the experiment and runs them
+\item[-hours H] - runs the jobs for H hours
+\item[-mins M] - or use this if you count in minutes
+\item[-queue] - use a queueing system (see above)
+\item[-loop] - pass the -loop option to perlgp-run.pl
+\end{description}
+
+Other options should be self-explanatory in the script itself.
+
+\subsection{perlgp-avg-logs.pl}
+
+When you've run 50 copies of the same job using perlgp-mrun.pl, this
+script will take the last line of each `results/tournament.log' file
+and calculate the means and standard deviations from each numeric
+column.  For non-numeric columns it prints the most common string seen
+in that column.
+
+\begin{verbatim}
+  usage: perlgp-avg-logs.pl label1 'glob1-??' label2 'glob2-??' label3...
+\end{verbatim}
+
+Where each label is an arbitrary identifier for the experiments which
+the following shell glob (protected in quotes) expands to.  Perhaps
+this is best explained with an example.  Imagine you are running two
+symbolic regression experiments, one with trigonometric functions, one
+without.  Assuming you ran perlgp-mrun.pl on two experiments named
+`fit-withtrig' and `fit-notrig', then you would use this program as follows:
+
+\begin{verbatim}
+  example: perlgp-avg-logs.pl notrig 'fit-notrig-??' trig 'fit-withtrig-??'
+\end{verbatim}
+
+When exactly two sets of experiments are given, as above, this program
+also prints out the $d$ value from a paired $t$-test (asks if the
+means from two assumed normal distributions are significantly
+different).  Look this up in any statistics text book, but as a rough
+guide, if you have done more than 30 replicates of each experiment and
+the absolute value of $d$ is greater than 1.96, then the two means are
+significantly different at the 5\% level.
+
+If you want to do the averaging at a particular tournament number, and
+not on the final tournament, add the option -tournament T, where T is
+the tournament number.  If this tournament is not in the logfile, the
+last entry in the log is used.
+
+You can specify logarithm-taking of certain columns in the log file with
+-logs COL1 -logs COL2 or -logs 1,5 and set the log base with -base N.
+Column numbers start at zero.
+
+\section{Demos}\label{Demos}
+\subsection{Approximation of pi}\label{pidemo}
+
+Please change directory to 'PERLGP\_BASE/demos/pi' and look at the
+README file before running this demo.
+
+\subsubsection{Problem definition}
+
+Find a integer arithmetic approximation to $\pi$, for example
+3 + 1/7
+
+Arithetic operations allowed: plus, minus, multiply and protected division
+
+Integers allowed: 1,2,3,5,7
+
+Fitness function: absolute error from $\pi$ defined as \texttt{2*atan2(2,0)} (small is good)
+
+\subsubsection{PerlGP approach}
+
+In this case the training and testing data structures
+(\texttt{TrainingData}, \texttt{TestingData}), and the output from
+\hyperref[no]{\texttt{evaluateOutput()}}{\texttt{evaluateOutput()}}{xref:evaluateOutput} are simple scalar numbers.  Usually, as
+discussed in Section~\ref{dataflow}, they would be scalar references
+to larger data structures.  There is no input variable in this
+situation (unlike the more familiar regression problem). There is also
+no meaningful concept of ``testing''; because no data is sampled,
+there can also be no out-of-sample data.  Hence \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet}
+returns just the ``true'' value of pi for both training and testing
+instances.  This value is only accessed by \hyperref[no]{\texttt{fitnessFunction()}}{\texttt{fitnessFunction()}}{xref:fitnessFunction}
+of course, not by the evolved code.
+
+There's not much more to explain, except of course that when the
+fitness reaches around 1e-15 it can go no further because the limit
+of double precision floating point numbers has been reached.
+
+In this example, self-adapting mutation and crossover probabilities
+(\hyperref[no]{\texttt{NodeMutationProb}}{\texttt{NodeMutationProb}}{xref:NodeMutationProb} and \hyperref[no]{\texttt{NodeXoverProb}}{\texttt{NodeXoverProb}}{xref:NodeXoverProb}) are used.  You
+can follow the evolution of these attributes with the gnuplot script
+plot-evparams.gp.
+
+\subsection{Symbolic regression of sine function}\label{sindemo}
+
+Please change directory to 'PERLGP\_BASE/demos/sin' and look at the
+README file before running this demo.
+
+\subsubsection{Problem definition}
+
+Find an approximation to $\sin 3x$ using arithmetic operations plus,
+minus, multiply and protected division, and the integers 1,2,3,5,7 and
+the input $x$.
+
+The fitness measure is basically the root mean squared error or
+deviation of the predicted function from the target function, measured
+on a set of randomly sampled points, between -1.0 and +1.0 initially,
+but the range and number of points increases during the run (see
+below).
+
+\subsubsection{PerlGP approach}
+
+Here, \hyperref[no]{\texttt{loadSet()}}{\texttt{loadSet()}}{xref:loadSet} reads in data (randomly sampled $x$ values
+from the files \hyperref[no]{\texttt{TrainingSet}}{\texttt{TrainingSet}}{xref:TrainingSet} or \hyperref[no]{\texttt{TestingSet}}{\texttt{TestingSet}}{xref:TestingSet}) which is
+generated by a simple script ./generate\_data.pl (which gets run by the
+\hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} method, but more on this later).  The general flow
+of data is discussed in detail in Section~\ref{dataflow}.  
+
+Two subtle ``hacks'' seemed to be needed to get well behaved GP runs
+on this problem.  Domain specific knowledge was used in both cases.
+Firstly, the error function incorporates a cap on the per-sample
+error.  If the squared difference between the predicted and known $y$
+values is greater than 1.0, it is counted as 1.0.  This may not be
+essential, but with prior knowledge of the Taylor expansions of
+trigonometric functions we know that at $\pm$ infinity the
+approximation also deviates infinitely from the $x$ axis.  So this
+error capping should help not to punish functions containing high
+powers of $x$.  The second hack is to start training on a small range
+of $x$ values centred around zero and then increase the range
+(attribute \texttt{Range}) as the evolved solutions reach a certain
+target fitness.  Again we are using domain specific knowledge: we know
+that the early terms in the Taylor expansion best fit the sine
+function for values of $x$ around zero.  You can play around with more
+complex target functions (for example, try $\sin(3(x-1.23))$) where
+there is no trivial solution early on.
+
+Take a look at the \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} method in Algorithm.pm, this is
+called on the first tournament and subsequently every
+\hyperref[no]{\texttt{RefreshInterval}}{\texttt{RefreshInterval}}{xref:RefreshInterval} tournaments.  When the best training fitness
+goes below a threshold, the \texttt{Range} is increased and the data
+is regenerated, and loaded up again (and the whole Population's
+fitnesses are reset).  An ``anti-stagnation'' measure is also
+implemented in \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh}: if more than 1000 tournaments go by
+without an improvement in fitness, the data is resampled and reloaded
+(but \texttt{Range} does not increase).
+
+This demo also uses self-adapting \hyperref[no]{\texttt{NodeXoverProb}}{\texttt{NodeXoverProb}}{xref:NodeXoverProb} and
+\hyperref[no]{\texttt{NodeMutationProb}}{\texttt{NodeMutationProb}}{xref:NodeMutationProb} attributes.
+
+The various devices employed here may or may not be necessary to get a
+good result, but they illustrate some of the ways you can customise
+PerlGP.  
+
+Note: the fitness function and data structures are not really
+optimised for speed (wasteful use of hashes and so on).  You can read
+about speed comparisons against lilgp on the same problem in my EuroGP
+2003 paper (available on request and later on the web).  It's always a
+good idea to have something else to do while jobs are running however...
+
+\subsection{Compound interest}
+
+Please change directory to 'PERLGP\_BASE/demos/interest' and look at the
+README file before running this demo.
+
+\subsubsection{Problem definition}
+
+Given the initial amount deposited in a bank, a fixed yearly deposit
+amount, the interest rate and the number of years invested, what is
+the final amount assuming a simple model of compound interest.
+
+The fitness function is the root mean square deviation of the
+predicted final amount from the real final amount.
+
+\subsubsection{PerlGP approach}
+
+This is treated more like a modelling problem than the previous
+regression problem.  The training data is generated by
+./generate\_data.pl and is read in with
+\hyperref[no]{\texttt{loadSet}}{\texttt{loadSet}}{xref:loadSet} in the
+usual way.  The grammar is constructed to allow looping and allows six
+variables to be manipulated: the four input variables and an
+additional two which are initialised to zero.  Note how excessive
+looping is avoided with the use of the \texttt{\$z} variable.
+
+This demo has a nice simple \hyperref[no]{\texttt{refresh()}}{\texttt{refresh()}}{xref:refresh} method that you can
+look at.  It also uses self-adapting \hyperref[no]{\texttt{NodeXoverProb}}{\texttt{NodeXoverProb}}{xref:NodeXoverProb} and
+\hyperref[no]{\texttt{NodeMutationProb}}{\texttt{NodeMutationProb}}{xref:NodeMutationProb} attributes.
+
+This appears to be a challenging problem, because it is difficult to
+get good results without unfairly biasing the grammar to give the kind
+of programs you want to see.  For example it is tempting to add a
+\verb:{VAR} += {NUM}: statement.  This is a common problem in genetic
+programming - the search space is large, local minima are prevalent,
+and CPU time and memory is limited, so it is tempting to push the
+system in the direction you think it should take.  Another temptation
+is to use huge populations, but that changes the problem to a brute
+force search and evolution becomes less important.
+
+
+
+%% to do?
+%% assume tied
+
+\end{document}

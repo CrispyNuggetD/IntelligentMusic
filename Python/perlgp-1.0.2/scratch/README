@@ -1,0 +1,42 @@
+-----------------
+The PerlGP system  -  author/copyright: Bob MacCallum 2002
+-----------------
+
+To run the demos, first set the following environment variables
+(preferably in your shell startup file)
+
+###########################################
+# PerlGP environment variables (bash style)
+
+# where you unpacked the PerlGP package
+PERLGP_BASE=~/perlgp-X.Y.Z
+
+# probably don't need to change these two
+PERLGP_LIB=$PERLGP_BASE/lib
+PERLGP_BIN=$PERLGP_BASE/bin
+
+# add PERLGP_BIN to your PATH
+PATH=$PERLGP_BIN:$PATH
+
+# a LOCAL temporary directory (you'll need to clean up manually afterwards)
+PERLGP_SCRATCH=/scratch
+
+# a network directory for storing 'checkpoint/restart' populations and
+# migrants between machines.  leave empty if you're not doing this
+PERLGP_POPS=
+
+# if you use a queueing system, give the name of the environment
+# variable which contains the job id
+PERLGP_JOBID=
+
+# you may need to 'export' these variables
+##########################################
+
+
+Then you simply go into a demo directory and type:
+
+perlgp-run.pl
+
+(preferably backgrounding it)
+
+For more, see the README files in the demo directories.

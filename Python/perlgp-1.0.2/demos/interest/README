@@ -1,0 +1,16 @@
+demos/interest
+
+simple model of compound interest with a yearly deposit
+
+To run the demo, simply enter the following command
+unix-prompt% perlgp-run.pl &
+
+for more info, see generate_data.pl
+
+to plot progress use
+
+plot-tlog.pl -logs y [-refresh 20]
+./plot-fit.pl [-refresh 20]
+gnuplot -persist plot-evparams.gp  -or-  gnuplot plot-evparams.gpr
+gnuplot -persist plot-fitdist.gp  -or-  gnuplot plot-fitdist.gpr
+

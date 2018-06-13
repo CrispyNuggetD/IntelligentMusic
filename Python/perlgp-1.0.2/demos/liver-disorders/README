@@ -1,0 +1,33 @@
+
+data from
+
+http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/liver-disorders
+
+to activate the 10-fold cross-validation, copy the liver-disorders directory
+into
+
+liver-disorders-01
+liver-disorders-02
+liver-disorders-03
+..
+liver-disorders-10
+
+
+then run each one.
+
+you'll see that each one uses a different combination of train/test data.
+
+you can concatenate all the */results/recent.testing.output files into one
+and calculate the performance on that (to give an idea of overall
+performance).  however, you do end up with 10 different classifiers.
+
+to run the entire set as train *and* test, edit Algorithm.pm and
+
+replace
+
+    if (($file eq 'test' && $chunk == $leave_out_chunk) ||
+	($file eq 'train' && $chunk != $leave_out_chunk)) {
+
+with 
+
+    if (1) {

@@ -1,0 +1,19 @@
+demos/sin
+
+polynomial-type regression of sin(x) function using x 1 2 3 5 7 + - * /
+
+To run the demo, simply enter the following command
+unix-prompt% perlgp-run.pl &
+
+actual function is defined in ./generate_data.pl
+and the default is
+   sin($x - $rt3) + $rt2; # sqrt(3) and sqrt(2)
+the arbitrary offsets are to make it harder!
+
+to plot progress use
+
+plot-tlog.pl -logs y [-refresh 20]
+./plot-fit.pl [-refresh 20]
+gnuplot -persist plot-evparams.gp  -or-  gnuplot plot-evparams.gpr
+gnuplot -persist plot-fitdist.gp  -or-  gnuplot plot-fitdist.gpr
+

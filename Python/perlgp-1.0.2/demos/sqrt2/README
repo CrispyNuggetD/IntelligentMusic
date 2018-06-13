@@ -1,0 +1,7 @@
+demos/sqrt2
+
+see ../pi/README - but replace pi with the square root of 2!
+
+To run the demo, simply enter the following command
+unix-prompt% perlgp-run.pl &
+
