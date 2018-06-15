@@ -10,6 +10,9 @@ def randomInstrument(number=5):
 	nowNumber = 1
 	global randomInstruments
 	randomInstruments = [] 
+	global minFreq
+
+	allFreq = []
 	while nowNumber <= number:
 		currentWave = np.random.random_integers(19980) + 20
 
@@ -40,10 +43,15 @@ def randomInstrument(number=5):
 			print (str(nowNumber) + "th random note is: " + str(currentWave)
 + "Hz, " + waveType + ", Volume = " + str(volume))
 		nowNumber += 1
-
+		
+		allFreq = allFreq + [currentWave]
 		randomInstruments = randomInstruments + [[currentWave,waveType,phaseshift,volume]]
 	print ("")
 	print (randomInstruments)
+	
+	minFreq = np.amin(allFreq)
+	print ("minFreq= " + str(minFreq))
+
 	return randomInstruments
 	
 

@@ -32,7 +32,7 @@ start_time = time.time()
 #addInstrumentToSong()
 
 #EvaluateNote([[note("C3"),"sine",0,1]],[[32, note("C4")]])
-EvaluateNote(randomInstrument(1),randomNotes(16,2))
+EvaluateNote(randomInstrument(4),randomNotes(32,4))
 export()
 
 

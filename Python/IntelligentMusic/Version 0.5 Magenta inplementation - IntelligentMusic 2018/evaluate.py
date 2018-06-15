@@ -78,17 +78,21 @@ def EvaluateNote(freqComponents,noteData):
 
 			if waveform[1] == "sine":
 			#addData refers to additional data
-				addData = vol*np.sin(dataPoints*finalFreq)
+				equaliseVolFactor = 1.41421356237
+				addData = equaliseVolFactor*vol*np.sin(dataPoints*finalFreq)
 				#make array; DO NOT Append to current data
 				#adddata to not overwrite original data
+				#Vol for sin is inverse of RMS value to equalise
 			elif waveform[1] == "square":
 				addData = vol*signal.square(dataPoints*finalFreq)
 				#square
 			elif waveform[1] == "sawtooth":
-				addData = vol*signal.sawtooth(dataPoints*finalFreq)
+				equaliseVolFactor = 1.73205080757
+				addData = equaliseVolFactor*vol*signal.sawtooth(dataPoints*finalFreq)
 				#sawtooth
 			elif waveform[1] == "triangle":
-				addData = vol*signal.sawtooth((dataPoints*finalFreq),0.5)
+				equaliseVolFactor = 1.73205080757
+				addData = equaliseVolFactor*vol*signal.sawtooth((dataPoints*finalFreq),0.5)
 				#triangle
 			if localData == []:
 				localData = addData

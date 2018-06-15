@@ -7,6 +7,7 @@ def plot():
 	print ("")
 	start_time1 = time.time()
 	from evaluate import song
+	from generate import minFreq
 
 	dataHeight = np.max(np.abs(song))
 
@@ -24,7 +25,7 @@ def plot():
 
 	global plotBars
 	if plotBars == 0:
-		plotBars = totalBitsOfNote
+		plotBars = totalBitsOfNote = 2*4410000/(minFreq)
 	plt.xlabel('Bit')
 	plt.ylabel('Loudness')
 	#plt.axis('tight')
@@ -42,7 +43,8 @@ def plot():
 				plt.axis([0,plotBars,-dataHeight,dataHeight])
 		else:
 			if normalise == 1:
-				if toPlotBefore == 1:					plt.axis([smallOffsetDataPoint,bigOffsetDataPoint,-1,1])
+				if toPlotBefore == 1:					
+					plt.axis([smallOffsetDataPoint,bigOffsetDataPoint,-1,1])
 				else:
 					plt.axis([plotOffsetBars, bigOffsetDataPoint,-1,1])
 			else:

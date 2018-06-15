@@ -5,8 +5,8 @@ bpm = 60
 
 #plotting
 toPlot = 1 #1 to plot; 0 to not plot
-plotBars = 0.5 #0 for total song length. Divide by bitrate to plot specific bits. Divide by frequency to plot specific waves.
-plotOffsetBars = 0.5
+plotBars = 0 #0 for one wave. 0 and len(song) in totalBitsOfNotes for total song length. Divide by bitrate to plot specific bits. Divide by frequency to plot specific waves.
+plotOffsetBars = 0
 toPlotBefore = 0 #1 to plot plotBars BEFORE the plotOffsetBars, 0 for only AFTER
 normalise = 1 #1 to normalise; 0 to retain original amplitude
 
