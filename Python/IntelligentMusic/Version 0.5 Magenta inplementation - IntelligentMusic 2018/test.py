@@ -27,12 +27,12 @@ start_time = time.time()
 #randomNotes()
 
 
-#GenerateNote(64, 1567.98)
-#GenerateNote(16,note("80"))
+#EvaluateNote(64, 1567.98)
+#EvaluateNote(16,note("80"))
 #addInstrumentToSong()
 
-#GenerateNote([[note("C4"),"sine",0,1]],[[32, [note("C4")]]])
-GenerateNote(randomInstrument(),randomNotes())
+#EvaluateNote([[note("C3"),"sine",0,1]],[[32, note("C4")]])
+EvaluateNote(randomInstrument(1),randomNotes(16,2))
 export()
 
 

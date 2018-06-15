@@ -20,7 +20,7 @@ def newInstrument():
 	return
 '''
 
-def GenerateNote(freqComponents,noteData):
+def EvaluateNote(freqComponents,noteData):
 	"This generates a note of frequency in Hz and times of 1/64 notes"
 	print ("")
 
@@ -33,9 +33,10 @@ def GenerateNote(freqComponents,noteData):
 
 	print ("Current bits: " + str(len(data)) + " (" + str(len(data)/44100) + " bars)")
 		#show bits of current data
-	
+
 	for noteData in noteData:
-		localData = ("") 
+		localData = []
+
 		#initialise localData
 
 		bitsOfNote = ((noteData[0]/64)*bitsPerBeat)//1 
@@ -43,57 +44,57 @@ def GenerateNote(freqComponents,noteData):
 		#(how much of a beat) then * bitsPB 
 		####change note length to 32 later and generate 1 second
 	
-		for multipleNotes in noteData:
-			print ("Generating melody (" + str(multipleNotes) + "Hz) " + "(length: " + str(noteData[0]) + ")...")
-			
-			freqRatio = multipleNotes/freqComponents[0][0]
-			
-			for waveform in freqComponents:
-				finalFreq = freqRatio*waveform[0]
+		#for multipleNotes in noteData:
+		print ("Generating melody (" + str(noteData[1]) + "Hz) " + "(length: " + str(noteData[0]) + ")...")
 		
-				print ("		Generating waveform (" + str(waveform[1]) + ", " + str(finalFreq) + "Hz, " + str(waveform[2]) + u"\u00b0" +" Phaseshift)...")
+		freqRatio =  noteData[1]/freqComponents[0][0]
+		
+		for waveform in freqComponents:
+			finalFreq = freqRatio*waveform[0]
+	
+			print ("		Generating waveform (" + str(waveform[1]) + ", " + str(finalFreq) + "Hz, " + str(waveform[2]) + u"\u00b0" +" Phaseshift)...")
+		
+			####dataPoints
+			if finalFreq == 0:
+				phaseshift = 0
+			else:
+				phaseshift = (waveform[2]/360*(44100/finalFreq))//1
+					#Convert to fraction of waveform and calculate number of bits to offset dataPoints
 			
-				####dataPoints
-				if finalFreq == 0:
-					phaseshift = 0
-				else:
-					phaseshift = (waveform[2]/360*(44100/finalFreq))//1
-						#Convert to fraction of waveform and calculate number of bits to offset dataPoints
-				
-				dataPoints = np.arange(0 + phaseshift, bitsOfNote + phaseshift)
-					#i.e. how much of the waveform to generate; array of what point of wave to generate
-					#if bitsOfNote is 44100, from 0 to 44099, 44100 values
-					#e.g. bitsOfNote is 22050, at the end, datapoint = 0.5				#divided by 44100 so sampling rate is preserved; 44100 values
-			
-				dataPoints = dataPoints/44100 
-					#bit of waveform to generate 
+			dataPoints = np.arange(0 + phaseshift, bitsOfNote + phaseshift)
+				#i.e. how much of the waveform to generate; array of what point of wave to generate
+				#if bitsOfNote is 44100, from 0 to 44099, 44100 values
+				#e.g. bitsOfNote is 22050, at the end, datapoint = 0.5				#divided by 44100 so sampling rate is preserved; 44100 values
+		
+			dataPoints = dataPoints/44100 
+				#bit of waveform to generate 
 
-				dataPoints = dataPoints*(2*np.pi)
-					#e.g. end dataPoint is 0.5, dataPoint will be (2pi)/2 (half wave)
-				####dataPoints
-	
-				vol = waveform[3]
-					#volume
-	
-				if waveform[1] == "sine":
-				#addData refers to additional data
-					addData = vol*np.sin(dataPoints*finalFreq)
-					#make array; DO NOT Append to current data
-					#adddata to not overwrite original data
-				elif waveform[1] == "square":
-					addData = vol*signal.square(dataPoints*finalFreq)
-					#square
-				elif waveform[1] == "sawtooth":
-					addData = vol*signal.sawtooth(dataPoints*finalFreq)
-					#sawtooth
-				elif waveform[1] == "triangle":
-					addData = vol*signal.sawtooth((dataPoints*finalFreq),0.5)
-					#triangle
-				if localData == "":
-					localData = addData
-				else:
-					localData = [x + y for x, y in zip(addData, localData)]
-					#add frequencies and append to original (the note/ chord) data
+			dataPoints = dataPoints*(2*np.pi)
+				#e.g. end dataPoint is 0.5, dataPoint will be (2pi)/2 (half wave)
+			####dataPoints
+
+			vol = waveform[3]
+				#volume
+
+			if waveform[1] == "sine":
+			#addData refers to additional data
+				addData = vol*np.sin(dataPoints*finalFreq)
+				#make array; DO NOT Append to current data
+				#adddata to not overwrite original data
+			elif waveform[1] == "square":
+				addData = vol*signal.square(dataPoints*finalFreq)
+				#square
+			elif waveform[1] == "sawtooth":
+				addData = vol*signal.sawtooth(dataPoints*finalFreq)
+				#sawtooth
+			elif waveform[1] == "triangle":
+				addData = vol*signal.sawtooth((dataPoints*finalFreq),0.5)
+				#triangle
+			if localData == []:
+				localData = addData
+			else:
+				localData = [x + y for x, y in zip(addData, localData)]
+				#add frequencies and append to original (the note/ chord) data
 
 		data = np.append(data, localData)
 			#add to original (the song) data
