@@ -35,7 +35,7 @@ def GenerateNote(freqComponents,noteData):
 		#show bits of current data
 	
 	for noteData in noteData:
-		localData = ("") 
+		localData = []
 		#initialise localData
 
 		bitsOfNote = ((noteData[0]/64)*bitsPerBeat)//1 
@@ -43,7 +43,7 @@ def GenerateNote(freqComponents,noteData):
 		#(how much of a beat) then * bitsPB 
 		####change note length to 32 later and generate 1 second
 	
-		for multipleNotes in noteData:
+		for multipleNotes in noteData[1]:
 			print ("Generating melody (" + str(multipleNotes) + "Hz) " + "(length: " + str(noteData[0]) + ")...")
 			
 			freqRatio = multipleNotes/freqComponents[0][0]
@@ -89,7 +89,7 @@ def GenerateNote(freqComponents,noteData):
 				elif waveform[1] == "triangle":
 					addData = vol*signal.sawtooth((dataPoints*finalFreq),0.5)
 					#triangle
-				if localData == "":
+				if localData == []:
 					localData = addData
 				else:
 					localData = [x + y for x, y in zip(addData, localData)]
