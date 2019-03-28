@@ -18,22 +18,34 @@ Makeing a Python web application that generates computer-designed music that evo
    - - [x] Instruments
    - - [x] Beats
    - - [x] Notes
-5. - [x] Study DarwinTunes and music generation elements
-   - - [x] **_CURRENT:_** Read up Discrete Fourier Transform for frequency analysis and manipulation
-     1. - [x] **_CURRENT:_** Borrow and read DFT application in Music book from the library of Republic Polytechnic, Singapore
-     2. - [x] **_CURRENT:_** Analyse DarwinTunes Ruby code
-        1. - [x] Analyse musical elements and generation methodology
-        2. - [x] Change the syntax to python
-6. - [x] Study genetics and genetic programming
-   - - [x] Borrow and read Biology for Dummies book from the library of Republic Polytechnic, Singapore
+5. - [ ] Study DarwinTunes and music generation elements
+   - - [ ] **_CURRENT:_** Read up Discrete Fourier Transform for frequency analysis and manipulation
+     1. - [ ] **_CURRENT:_** Borrow and read DFT application in Music book from the library of Republic Polytechnic, Singapore
+     2. - [ ] **_CURRENT:_** Analyse DarwinTunes Ruby code
+        1. - [ ] Analyse musical elements and generation methodology
+        2. - [ ] Change the syntax to python
+6. - [ ] Study genetics and genetic programming
+   - - [ ] Borrow and read Biology for Dummies book from the library of Republic Polytechnic, Singapore
      1. - [x] Study Sexual Reproduction on Genetic Variation 
-        1. - [ ] Mutations
-        2. - [ ] Crossing-over
-        3. - [ ] Independent Assortment
-        4. - [ ] Fertilisation
-        5. - [ ] Nondisjunction
-        6. - [ ] etc.
+        1. - [x] Mutations
+        2. - [x] Crossing-over
+        3. - [x] Independent Assortment
+        4. - [x] Fertilisation
+        5. - [x] Nondisjunction
+        6. - [x] etc.
      2. - [ ] Study Mendelian Genetics on F1, F2, etc.
-6. - [ ] Create first bar of music
+7. - [ ] Create first bar of music
    - - [ ] Attempt hundred of repetitions
+ 
+## Future Developments 
+100. - [ ] Nice instruments (baseline + mid + high)
+101. - [ ] Nice tune (Notes + rhythm)
+102. - [ ] Great random generator
+103. **_MOST IMPORTANT THING THAT MAKES PROJECT UNIQUE_** 
+     - Google TensorFlow: Machine Learning and Artificial intelligience
+       - - [ ] Automatically calculate the "probability" of a user liking the music, base on desired genre.
+       - - [ ] Automatically make the musicality base on music theory.
+105. - [ ] Web-app interface for continued A.I. training and user-interaction
+106. - [ ] Linkages with other platforms and services to make a full-electronic or pop song
+
    
