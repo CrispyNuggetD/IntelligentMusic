@@ -18,15 +18,15 @@ Makeing a Python web application that generates computer-designed music that evo
    - - [x] Instruments
    - - [x] Beats
    - - [x] Notes
-5. - [ ] Study DarwinTunes and music generation elements
-   - - [ ] **_CURRENT_** Read up Discrete Fourier Transform for frequency analysis and manipulation
-     1. - [ ] **_CURRENT_** Borrow and read DFT application in Music book from the library of Republic Polytechnic, Singapore
-     2. - [ ] **_CURRENT_** Analyse DarwinTunes Ruby code
-        1. - [ ] Analyse musical elements and generation methodology
-        2. - [ ] Change the syntax to python
-6. - [ ] Study genetics and genetic programming
-   - - [ ] Borrow and read Biology for Dummies book from the library of Republic Polytechnic, Singapore
-     1. - [ ] Study Sexual Reproduction on Genetic Variation 
+5. - [x] Study DarwinTunes and music generation elements
+   - - [x] **_CURRENT:_** Read up Discrete Fourier Transform for frequency analysis and manipulation
+     1. - [x] **_CURRENT:_** Borrow and read DFT application in Music book from the library of Republic Polytechnic, Singapore
+     2. - [x] **_CURRENT:_** Analyse DarwinTunes Ruby code
+        1. - [x] Analyse musical elements and generation methodology
+        2. - [x] Change the syntax to python
+6. - [x] Study genetics and genetic programming
+   - - [x] Borrow and read Biology for Dummies book from the library of Republic Polytechnic, Singapore
+     1. - [x] Study Sexual Reproduction on Genetic Variation 
         1. - [ ] Mutations
         2. - [ ] Crossing-over
         3. - [ ] Independent Assortment
