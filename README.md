@@ -1,5 +1,13 @@
 ### IntelligentMusic
-This project aims to make a Python web application that generates computer-designed music that evolves over time, using gnetic Programming (for the evolution, check out DarwinTunes, a university project). Machine learning, perhaps using Google's TensorFlow is going to be used for automatic deduction of user's likeability; music element and song quality. 
+This project aims to make a Python web application that generates computer-designed music that evolves over time, using Genetic Programming (for the evolution, check out DarwinTunes, a university project). 
+
+Machine learning, perhaps using Google's TensorFlow is going to be used for **automatic deduction of user's likeability; music element and song quality.**
+
+To my knowledge, computer music generation has already been made, however, user's input are still needed. There exists no A.I. that "knows" whether a person would like a music or not.
+
+This has applications in biophysics and psychology of musical perception too.
+
+Please do not hesitate to contact me for any queries. I will appreciate input or constructive critisms and coaching too. I also have a [LinkedIn profile](https://www.linkedin.com/in/crispynugget/), where you can find out about all the sector's and involvements that I have partaken in before.
 
 ## To Do:
 1. - [x] Soundform generator
