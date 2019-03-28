@@ -3,7 +3,7 @@ This project aims to make a Python web application that generates computer-desig
 
 Machine learning, perhaps using Google's TensorFlow is going to be used for **automatic deduction of user's likeability; music element and song quality.**
 
-Moderate music theory will be employed to generate the chords, so that it will not be a "random" noisy chord to begin with. Different species, and a classification of "species" in a biodiversity, will also be explored, rather than just having one "linear" output organism. To my knowledge, computer music generation has already been made, however, user's input are still needed. There exists no A.I. that "knows" whether a person would like a music or not.
+Moderate music theory will be employed to generate the chords, so that it will not be a "random" noisy chord to begin with. Different species, and a taxonomy of "species", will also be explored, rather than just having one "linear" output organism. To my knowledge, computer music generation has already been made, however, user's input are still needed. There exists no A.I. that "knows" whether a person would like a music or not.
 
 This has applications in biophysics and psychology of musical perception too.
 
