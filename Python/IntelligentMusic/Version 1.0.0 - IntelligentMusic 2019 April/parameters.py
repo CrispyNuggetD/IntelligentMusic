@@ -12,7 +12,7 @@ normalise = 1 #1 to normalise; 0 to retain original amplitude
 
 #exporting
 toExport = 1 #1 to export; 0 to not export
-outputFileName = "volume&phaseshift"
+outputFileName = "Export/Sample"
 
 maxLoud = 0.5 #loudness from 0 to 1 
 ##to be applied at the end as normalisation i.e. data * maxLoud 

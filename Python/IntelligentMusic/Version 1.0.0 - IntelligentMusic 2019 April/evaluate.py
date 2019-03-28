@@ -50,8 +50,13 @@ def EvaluateNote(freqComponents,noteData):
 		freqRatio =  noteData[1]/freqComponents[0][0]
 		
 		for waveform in freqComponents:
+			#original#
 			finalFreq = freqRatio*waveform[0]
-	
+			
+			#debug#
+			#finalFreq = waveform[0]
+
+			
 			print ("		Generating waveform (" + str(waveform[1]) + ", " + str(finalFreq) + "Hz, " + str(waveform[2]) + u"\u00b0" +" Phaseshift)...")
 		
 			####dataPoints

@@ -2,18 +2,21 @@ from scipy.io.wavfile import write
 import os
 import numpy as np
 
-from parameters import toExport, outputFileName
 
-####Increment output wav number####
-outputFileName = outputFileName + " #.wav"
-outputVersion = 1
-while os.path.isfile(outputFileName.replace("#", str(outputVersion))):
-	outputVersion += 1
-outputFileName = outputFileName.replace("#", str(outputVersion))
-####Increment output wav number####
+
+
 
 def export():
 	print ("")
+	
+	from parameters import toExport, outputFileName
+	####Increment output wav number####
+	outputFileName = outputFileName + " #.wav"
+	outputVersion = 1
+	while os.path.isfile(outputFileName.replace("#", str(outputVersion))):
+		outputVersion += 1
+	outputFileName = outputFileName.replace("#", str(outputVersion))
+	####Increment output wav number####
 
 	from evaluate import song
 	global normalisedData

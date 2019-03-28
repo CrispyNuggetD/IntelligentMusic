@@ -9,6 +9,8 @@ import time
 #randomInstrument()
 #quit()
 
+print ("Welcome to IntelligentMusic.\n")
+input("Press Enter to continue...")
 print ("")
 
 ####Execution time####
@@ -31,19 +33,24 @@ start_time = time.time()
 #EvaluateNote(16,note("80"))
 #addInstrumentToSong()
 
+
+
 #EvaluateNote([[note("C3"),"sine",0,1]],[[32, note("C4")]])
-EvaluateNote(randomInstrument(4),randomNotes(32,4))
-export()
+nowNumber = 1
+while nowNumber <= 5:
+	print ("start")
+	EvaluateNote(randomInstrument(3),randomNotes(8,256))
+	export()
 
 
 ####Execution time####
-print ("My program took", time.time() - start_time, "seconds to run (Excluding plotting time)")
+	print ("My program took", time.time() - start_time, "seconds to run (Excluding plotting time)")
 ####Execution time####
 
-plot()
+	plot()
 
 
-print ("")
+	print ("end")
 
 '''
 	When you try to divide a list by a real number, python says "you are crazy! You can't do that." The array is like a vector. If you divide it by a real number, each "thing" in there is divided by that number. This can be super useful.

@@ -83,17 +83,6 @@ def EvaluateNote(freqComponents,noteData):
 				#make array; DO NOT Append to current data
 				#adddata to not overwrite original data
 				#Vol for sin is inverse of RMS value to equalise
-			elif waveform[1] == "square":
-				addData = vol*signal.square(dataPoints*finalFreq)
-				#square
-			elif waveform[1] == "sawtooth":
-				equaliseVolFactor = 1.73205080757
-				addData = equaliseVolFactor*vol*signal.sawtooth(dataPoints*finalFreq)
-				#sawtooth
-			elif waveform[1] == "triangle":
-				equaliseVolFactor = 1.73205080757
-				addData = equaliseVolFactor*vol*signal.sawtooth((dataPoints*finalFreq),0.5)
-				#triangle
 			if localData == []:
 				localData = addData
 			else:
