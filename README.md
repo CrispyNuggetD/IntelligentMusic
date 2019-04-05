@@ -9,12 +9,26 @@ This has applications in biophysics and psychology of musical perception too.
 
 Please do not hesitate to contact me for any queries. I will appreciate input or constructive critisms and coaching too. I also have a [LinkedIn profile](https://www.linkedin.com/in/crispynugget/), where you can find out about all the sector's and involvements that I have partaken in before.
 
+
+
+#1.make fade out fade in in evaluate to remove discontinuities (Clicks) Using Sin^2(x) + cos^2(x) = 1 for constant power
+#2. Investivate ramp and ramp times sine
+#3. Investigate ADSR (attack decay sustain release)
+#4. Investigate modulation (A. Ring and B. amplitude)
+
+
 ## To Do:
 1. - [x] Soundform generator
    - - [x] Sample .wav output file (white noise)
    - - [x] Sine and cosine waves
    - - [x] Triangle and square waves
    - - [x] Superposition
+   - - [ ] Removing aliasing and discontinuities (clicks) Using Sin^2(x) + cos^2(x) = 1 for constant power
+   - - [ ] Testing out RAMP functions
+   - 1. - [ ] RAMP (Addition)
+   - 2. - [ ] RAMP times SINE (Multiplication)
+   - - [ ] Investigate ADSR (attack decay sustain release)
+   - - [ ] Incorporate modulation (A. Ring and B. amplitude)
 2. - [x] Harmonics generator (Scales, etc.)
    - - [x] Generate multiple notes
 3. - [x] Workflow and format setup
