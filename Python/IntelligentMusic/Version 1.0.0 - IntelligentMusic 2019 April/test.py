@@ -6,6 +6,14 @@ from scales import *
 from generate import *
 import time
 
+
+#to do
+#1.make fade out fade in in evaluate to remove discontinuities (Clicks) Using Sin^2(x) + cos^2(x) = 1 for constant power
+#2. Investivate ramp and ramp times sine
+#3. Investigate ADSR (attack decay sustain release)
+#4. Investigate modulation (A. Ring and B. amplitude)
+
+
 #randomInstrument()
 #quit()
 
